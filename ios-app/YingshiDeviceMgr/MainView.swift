@@ -1,6 +1,58 @@
 import SwiftUI
 
+let APP_VER = "4.0.0"
+
+// 版本更新信息（四端统一数据结构，platform 区分 ios/android/harmony/windows）
+struct UpdateInfo: Identifiable {
+    let id = UUID()
+    let version: String
+    let notes: String
+    let url: String
+    let size: Int
+    let releasedAt: String
+}
+
+enum UpdateChecker {
+    // 版本号比较：a>b 返回 1，相等 0，a<b -1
+    static func cmpVer(_ a: String, _ b: String) -> Int {
+        let pa = a.split(separator: ".").map { Int($0) ?? 0 }
+        let pb = b.split(separator: ".").map { Int($0) ?? 0 }
+        for i in 0..<3 {
+            let x = i < pa.count ? pa[i] : 0
+            let y = i < pb.count ? pb[i] : 0
+            if x != y { return x > y ? 1 : -1 }
+        }
+        return 0
+    }
+
+    // 拉取指定平台最新版本；无更新返回 nil，网络异常抛出
+    static func fetchUpdate(platform: String) async throws -> UpdateInfo? {
+        let r = try await Api.get("/api/app/version/latest")
+        let data = Api.dict(r)
+        let v = (data[platform] as? [String: Any]) ?? [:]
+        let ver = Api.str(v, "version")
+        guard !ver.isEmpty, cmpVer(ver, APP_VER) > 0 else { return nil }
+        return UpdateInfo(version: ver, notes: Api.str(v, "notes"), url: Api.str(v, "url"),
+                          size: Api.int(v, "size"), releasedAt: Api.str(v, "released_at"))
+    }
+
+    static func message(_ u: UpdateInfo) -> String {
+        var s = "当前版本：v" + APP_VER + "\n最新版本：v" + u.version
+        if u.size > 1048576 { s += String(format: "（%.1f MB）", Double(u.size) / 1048576.0) }
+        else if u.size > 1024 { s += String(format: "（%.1f KB）", Double(u.size) / 1024.0) }
+        s += "\n\n更新说明：\n" + (u.notes.isEmpty ? "常规更新与问题修复" : u.notes)
+        if !u.url.hasPrefix("http") { s += "\n\n尚未配置下载地址，请联系管理员获取安装包。" }
+        return s
+    }
+}
+
 struct MainView: View {
+    // 登录后静默检查版本更新（仅发现新版本时弹窗）
+    @State private var upd: UpdateInfo?
+    @State private var updMsg = ""
+    @State private var showUpd = false
+    @Environment(\.openURL) private var openURL
+
     var body: some View {
         TabView {
             HomeView()
@@ -15,6 +67,21 @@ struct MainView: View {
                 .tabItem { Label("我的", systemImage: "person.crop.circle.fill") }
         }
         .tint(Color(hex: 0x1890ff))
+        .onAppear {
+            Task {
+                if let u = try? await UpdateChecker.fetchUpdate(platform: "ios") {
+                    await MainActor.run { upd = u; updMsg = UpdateChecker.message(u); showUpd = true }
+                }
+            }
+        }
+        .alert(upd.map { "发现新版本 v" + $0.version } ?? "检查更新", isPresented: $showUpd) {
+            if let u = upd, u.url.hasPrefix("http"), let dl = URL(string: u.url) {
+                Button("下载新版本") { openURL(dl) }
+                Button("稍后再说", role: .cancel) {}
+            } else {
+                Button("知道了", role: .cancel) {}
+            }
+        } message: { Text(updMsg) }
     }
 }
 
@@ -249,6 +316,10 @@ struct ProfileView: View {
     @StateObject private var session = Session.shared
     @State private var showPost = false
     @State private var showPwd = false
+    @State private var upd: UpdateInfo?
+    @State private var updMsg = ""
+    @State private var showUpd = false
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         NavigationStack {
@@ -282,6 +353,8 @@ struct ProfileView: View {
                     }
                     Button { showPwd = true } label: { menuRow("🔒", "修改密码") }
                         .buttonStyle(.plain)
+                    Button { checkUpdate() } label: { menuRow("🔍", "检查更新") }
+                        .buttonStyle(.plain)
                     Button { session.logout() } label: {
                         menuRow("🚪", "退出登录").foregroundColor(Color(hex: 0xff4d4f))
                     }
@@ -295,6 +368,29 @@ struct ProfileView: View {
             .navigationTitle("我的")
             .sheet(isPresented: $showPost) { NoticeView(postMode: true) }
             .sheet(isPresented: $showPwd) { ChangePwdView() }
+            .alert(upd.map { "发现新版本 v" + $0.version } ?? "检查更新", isPresented: $showUpd) {
+                if let u = upd, u.url.hasPrefix("http"), let dl = URL(string: u.url) {
+                    Button("下载新版本") { openURL(dl) }
+                    Button("稍后再说", role: .cancel) {}
+                } else {
+                    Button("知道了", role: .cancel) {}
+                }
+            } message: { Text(updMsg) }
+        }
+    }
+
+    // 手动检查更新：无更新/失败也给出提示
+    func checkUpdate() {
+        Task {
+            do {
+                if let u = try await UpdateChecker.fetchUpdate(platform: "ios") {
+                    await MainActor.run { upd = u; updMsg = UpdateChecker.message(u); showUpd = true }
+                } else {
+                    await MainActor.run { upd = nil; updMsg = "已是最新版本 v" + APP_VER; showUpd = true }
+                }
+            } catch {
+                await MainActor.run { upd = nil; updMsg = "检查更新失败，请检查网络后重试"; showUpd = true }
+            }
         }
     }
 
