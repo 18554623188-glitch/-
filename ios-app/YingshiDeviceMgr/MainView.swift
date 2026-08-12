@@ -34,6 +34,10 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     header
+                    Image("logo3")
+                        .resizable().scaledToFit()
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal, 16).padding(.top, 16)
                     statsGrid.padding(.horizontal, 16).padding(.top, 16)
                     Text("系统消息推送已开启：报修、维修完成、聊天等新消息将通过通知栏实时提醒")
                         .font(.footnote).foregroundColor(Color(hex: 0x1890ff))
@@ -64,8 +68,14 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("你好，\(session.displayName.isEmpty ? session.username : session.displayName)")
                     .font(.title2.bold()).foregroundColor(.white)
-                Text("影视星河设备管理系统 v4.0 · 苹果原生版")
-                    .font(.caption).foregroundColor(.white.opacity(0.85))
+                HStack(spacing: 8) {
+                    Image("logo2sq")
+                        .resizable().scaledToFit()
+                        .frame(width: 34, height: 34)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    Text("影视星河设备管理系统 v4.0 · 苹果原生版")
+                        .font(.caption).foregroundColor(.white.opacity(0.85))
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
