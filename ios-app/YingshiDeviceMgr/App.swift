@@ -117,6 +117,18 @@ enum Api {
     static func patch(_ p: String, _ b: [String: Any]) async throws -> [String: Any] { try await request("PATCH", p, b) }
     static func delete(_ p: String) async throws -> [String: Any] { try await request("DELETE", p) }
 
+    // 下载附件原始字节（Authorization 头鉴权，用于图片预览/保存）
+    static func download(_ path: String) async throws -> Data {
+        guard let url = URL(string: Session.base + path) else { throw ApiError.bad("URL 无效") }
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 60
+        let s = Session.shared
+        if !s.token.isEmpty { req.setValue("Bearer " + s.token, forHTTPHeaderField: "Authorization") }
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        if let h = resp as? HTTPURLResponse, h.statusCode >= 400 { throw ApiError.bad("下载失败") }
+        return data
+    }
+
     static func arr(_ r: [String: Any]) -> [[String: Any]] { r["data"] as? [[String: Any]] ?? [] }
     static func dict(_ r: [String: Any]) -> [String: Any] { r["data"] as? [String: Any] ?? [:] }
     static func str(_ d: [String: Any], _ k: String) -> String {
