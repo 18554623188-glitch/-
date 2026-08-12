@@ -121,6 +121,7 @@ struct DevicesView: View {
         if !statusFilter.isEmpty {
             path += "&status=" + (statusFilter.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
         }
+        let path = path
         Task {
             let r = try? await Api.get(path)
             await MainActor.run { if let r { devices = Api.arr(r) } }
@@ -275,8 +276,14 @@ struct ScannerView: UIViewControllerRepresentable {
 final class ScannerVC: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
     var onResult: ((String) -> Void)?
     private let session = AVCaptureSession()
+    private var previewLayer: AVCaptureVideoPreviewLayer?
     private var detecting = false
     private var finished = false
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        previewLayer?.frame = view.bounds
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -333,7 +340,7 @@ final class ScannerVC: UIViewController, AVCaptureVideoDataOutputSampleBufferDel
             let preview = AVCaptureVideoPreviewLayer(session: session)
             preview.videoGravity = .resizeAspectFill
             preview.frame = view.bounds
-            preview.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            previewLayer = preview
             view.layer.insertSublayer(preview, at: 0)
             DispatchQueue.global(qos: .userInitiated).async { self.session.startRunning() }
         } catch {
