@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 // 影视星河设备管理系统 v4.0 · 苹果原生版（SwiftUI）
 // 与鸿蒙端同功能同界面：登录/首页(天气+统计)/设备(扫码)/人员(登录下线时间)/消息(已读回执+群管理)/通知(管理员发布)/我的
@@ -28,8 +29,63 @@ final class Session: ObservableObject {
     var displayName = ""
     func logout() {
         Task { try? await Api.post("/api/auth/logout", [:]) }
+        PushMonitor.shared.stop()
         token = ""; userId = ""; role = ""; username = ""; displayName = ""
         loggedIn = false
+    }
+}
+
+// 四端统一推送：8 秒轮询 push_events + 系统通知栏（与安卓/鸿蒙/电脑端同架构）
+final class PushMonitor {
+    static let shared = PushMonitor()
+    private var timer: Timer?
+    private var polling = false
+    private var cursor = UserDefaults.standard.integer(forKey: "push_cursor")
+    private var firstSync = UserDefaults.standard.integer(forKey: "push_cursor") == 0
+
+    func start() {
+        stopTimer()
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        timer = Timer.scheduledTimer(withTimeInterval: 8, repeats: true) { [weak self] _ in
+            self?.poll()
+        }
+        poll()
+    }
+
+    func stop() { stopTimer() }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func poll() {
+        let s = Session.shared
+        guard s.loggedIn, !s.token.isEmpty, !polling else { return }
+        polling = true
+        Task { [weak self] in
+            guard let self else { return }
+            defer { self.polling = false }
+            let r = try? await Api.get("/api/push/events?after=\(self.cursor)")
+            guard let r, let rows = r["data"] as? [[String: Any]], !rows.isEmpty else { return }
+            var maxId = self.cursor
+            for row in rows {
+                let id = Api.int(row, "id")
+                if id > maxId { maxId = id }
+                if !self.firstSync {
+                    let content = UNMutableNotificationContent()
+                    let t = Api.str(row, "title")
+                    content.title = t.isEmpty ? "系统消息" : t
+                    content.body = Api.str(row, "body")
+                    content.sound = .default
+                    let req = UNNotificationRequest(identifier: "push-\(id)", content: content, trigger: nil)
+                    try? await UNUserNotificationCenter.current().add(req)
+                }
+            }
+            self.cursor = maxId
+            self.firstSync = false
+            UserDefaults.standard.set(maxId, forKey: "push_cursor")
+        }
     }
 }
 
