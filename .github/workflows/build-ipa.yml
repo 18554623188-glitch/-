@@ -1,0 +1,37 @@
+name: build-ipa
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ios-app/**'
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 编译（无签名）
+        run: |
+          cd ios-app
+          xcodebuild -project YingshiDeviceMgr.xcodeproj \
+            -target YingshiDeviceMgr -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: 打包 IPA
+        run: |
+          cd ios-app
+          rm -rf Payload
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/YingshiDeviceMgr.app Payload/
+          zip -qr YingshiDeviceMgr-unsigned.ipa Payload
+          rm -rf Payload
+
+      - name: 上传 IPA 制品
+        uses: actions/upload-artifact@v4
+        with:
+          name: YingshiDeviceMgr-unsigned-ipa
+          path: ios-app/YingshiDeviceMgr-unsigned.ipa
