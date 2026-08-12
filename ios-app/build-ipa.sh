@@ -18,7 +18,7 @@ DD=build
 if [ -n "$TEAM" ]; then
   echo "==> 使用团队 $TEAM 签名编译..."
   xcodebuild -project YingshiDeviceMgr.xcodeproj \
-    -target YingshiDeviceMgr -configuration $CONF \
+    -scheme YingshiDeviceMgr -configuration $CONF \
     -derivedDataPath "$DD" \
     CODE_SIGNING_ALLOWED=YES \
     DEVELOPMENT_TEAM="$TEAM" \
@@ -28,7 +28,7 @@ if [ -n "$TEAM" ]; then
 else
   echo "==> 无签名编译（CODE_SIGNING_ALLOWED=NO）..."
   xcodebuild -project YingshiDeviceMgr.xcodeproj \
-    -target YingshiDeviceMgr -configuration $CONF \
+    -scheme YingshiDeviceMgr -configuration $CONF \
     -derivedDataPath "$DD" \
     CODE_SIGNING_ALLOWED=NO | tail -8
   OUT=YingshiDeviceMgr-unsigned.ipa
