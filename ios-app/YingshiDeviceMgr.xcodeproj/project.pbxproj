@@ -16,6 +16,7 @@
 		FD0000000000000000000026 /* logo1.png in Resources */ = {isa = PBXBuildFile; fileRef = FD0000000000000000000017 /* logo1.png */; };
 		FD0000000000000000000027 /* logo2sq.png in Resources */ = {isa = PBXBuildFile; fileRef = FD0000000000000000000018 /* logo2sq.png */; };
 		FD0000000000000000000028 /* logo3.png in Resources */ = {isa = PBXBuildFile; fileRef = FD0000000000000000000019 /* logo3.png */; };
+		FD0000000000000000000029 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FD000000000000000000001A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 		FD0000000000000000000017 /* logo1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo1.png; sourceTree = "<group>"; };
 		FD0000000000000000000018 /* logo2sq.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo2sq.png; sourceTree = "<group>"; };
 		FD0000000000000000000019 /* logo3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo3.png; sourceTree = "<group>"; };
+		FD000000000000000000001A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FD0000000000000000000005 /* YingshiDeviceMgr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YingshiDeviceMgr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -72,6 +74,7 @@
 				FD0000000000000000000017 /* logo1.png */,
 				FD0000000000000000000018 /* logo2sq.png */,
 				FD0000000000000000000019 /* logo3.png */,
+				FD000000000000000000001A /* Assets.xcassets */,
 			);
 			path = YingshiDeviceMgr;
 			sourceTree = "<group>";
@@ -137,6 +140,7 @@
 				FD0000000000000000000026 /* logo1.png in Resources */,
 				FD0000000000000000000027 /* logo2sq.png in Resources */,
 				FD0000000000000000000028 /* logo3.png in Resources */,
+				FD0000000000000000000029 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -222,6 +226,7 @@
 		FD000000000000000000000D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = YingshiDeviceMgr/Info.plist;
@@ -244,6 +249,7 @@
 		FD000000000000000000000E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = YingshiDeviceMgr/Info.plist;
