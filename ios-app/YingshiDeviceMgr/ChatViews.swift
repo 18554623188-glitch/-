@@ -1,4 +1,6 @@
 import SwiftUI
+import UIKit
+import Photos
 import PhotosUI
 
 struct ConvRef: Hashable {
@@ -210,6 +212,8 @@ struct ChatRoomView: View {
     @State private var convInfo: [String: Any]?
     @State private var showManage = false
     @State private var pickerItem: PhotosPickerItem?
+    @State private var previewPath = ""
+    @State private var showPreview = false
     private let msgTimer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
     private let readTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
     private let emojis = ["😀", "😂", "👍", "🙏", "", "❤️", "😅", "🤝", "💪", "", "", "🤔"]
@@ -280,6 +284,9 @@ struct ChatRoomView: View {
                 await MainActor.run { pickerItem = nil }
             }
         }
+        .fullScreenCover(isPresented: $showPreview) {
+            ImagePreviewView(path: previewPath)
+        }
     }
 
     private var isOwner: Bool {
@@ -303,6 +310,10 @@ struct ChatRoomView: View {
                         }
                         .frame(maxWidth: 180, maxHeight: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .onTapGesture {
+                            previewPath = Api.str(m, "file_url")
+                            showPreview = true
+                        }
                     } else if t == "video" || t == "file" {
                         Text((t == "video" ? "🎬 " : "📎 ") + Api.str(m, "file_name"))
                             .padding(.horizontal, 12).padding(.vertical, 8)
@@ -466,6 +477,92 @@ struct ManageView: View {
             await MainActor.run {
                 dismiss()
                 onDisband()
+            }
+        }
+    }
+}
+
+// ============ 图片全屏预览：黑底大图 + 保存到相册 ============
+struct ImagePreviewView: View {
+    let path: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var saving = false
+    @State private var msg = ""
+
+    private var fullUrl: URL? {
+        URL(string: Session.base + path + "?token=" + Session.shared.token)
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            if let u = fullUrl {
+                AsyncImage(url: u) { img in
+                    img.resizable().scaledToFit()
+                } placeholder: {
+                    ProgressView().tint(.white)
+                }
+            }
+            VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("✕")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(Color.white.opacity(0.15))
+                            .clipShape(Circle())
+                    }
+                    .padding(.trailing, 16)
+                }
+                Spacer()
+                Button(action: save) {
+                    Text(saving ? "保存中…" : "保存到相册")
+                        .font(.system(size: 16))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                        .background(Color(hex: 0x1890ff))
+                        .foregroundColor(.white)
+                        .cornerRadius(24)
+                }
+                .padding(.horizontal, 32)
+                .disabled(saving)
+                if !msg.isEmpty {
+                    Text(msg)
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding(.top, 8)
+                }
+            }
+            .padding(.top, 10)
+            .padding(.bottom, 30)
+        }
+    }
+
+    func save() {
+        guard !saving else { return }
+        saving = true
+        msg = ""
+        Task {
+            do {
+                let data = try await Api.download(path)
+                guard let img = UIImage(data: data) else { throw ApiError.bad("图片解码失败") }
+                try await PHPhotoLibrary.shared().performChanges {
+                    PHAssetChangeRequest.creationRequestForAsset(from: img)
+                }
+                await MainActor.run {
+                    msg = "已保存到相册"
+                    saving = false
+                }
+            } catch {
+                let detail = (error as? ApiError)?.errorDescription ?? "请允许访问相册或检查网络"
+                await MainActor.run {
+                    msg = "保存失败：" + detail
+                    saving = false
+                }
             }
         }
     }
