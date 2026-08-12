@@ -17,7 +17,7 @@ jobs:
         run: |
           cd ios-app
           xcodebuild -project YingshiDeviceMgr.xcodeproj \
-            -target YingshiDeviceMgr -configuration Release \
+            -scheme YingshiDeviceMgr -configuration Release \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO
 
