@@ -114,14 +114,14 @@ struct DevicesView: View {
     }
 
     func load() {
-        var path = "/api/devices?_=1"
+        var query = "/api/devices?_=1"
         if !keyword.trimmingCharacters(in: .whitespaces).isEmpty {
-            path += "&keyword=" + (keyword.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
+            query += "&keyword=" + (keyword.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
         }
         if !statusFilter.isEmpty {
-            path += "&status=" + (statusFilter.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
+            query += "&status=" + (statusFilter.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
         }
-        let path = path
+        let path = query
         Task {
             let r = try? await Api.get(path)
             await MainActor.run { if let r { devices = Api.arr(r) } }
