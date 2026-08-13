@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import UserNotifications
 
-// 影视星河设备管理系统 v4.0 · 苹果原生版（SwiftUI）
+// 影视星河设备管理系统 v5.0 · 苹果原生版（SwiftUI）
 // 与鸿蒙端同功能同界面：登录/首页(天气+统计)/设备(扫码)/人员(登录下线时间)/消息(已读回执+群管理)/通知(管理员发布)/我的
 
 @main
@@ -29,10 +29,50 @@ final class Session: ObservableObject {
     var role = ""
     var username = ""
     var displayName = ""
-    func logout() {
-        Task { try? await Api.post("/api/auth/logout", [:]) }
+
+    private init() { restore() }
+
+    // 登录态本地持久化：iOS 后台回收进程后再次启动可恢复 token，无需重新登录
+    func persist() {
+        let d = UserDefaults.standard
+        d.set(token, forKey: "session_token")
+        d.set(userId, forKey: "session_userId")
+        d.set(role, forKey: "session_role")
+        d.set(username, forKey: "session_username")
+        d.set(displayName, forKey: "session_displayName")
+    }
+
+    private func restore() {
+        let d = UserDefaults.standard
+        let t = d.string(forKey: "session_token") ?? ""
+        guard !t.isEmpty else { return }
+        token = t
+        userId = d.string(forKey: "session_userId") ?? ""
+        role = d.string(forKey: "session_role") ?? ""
+        username = d.string(forKey: "session_username") ?? ""
+        displayName = d.string(forKey: "session_displayName") ?? ""
+        loggedIn = true
+        PushMonitor.shared.start()
+        // 后台校验 token 有效性：已失效（如服务器重启）才退回登录页，网络不可用时保持登录态
+        Task { [weak self] in
+            let r = try? await Api.get("/api/auth/me")
+            guard let self else { return }
+            if let r, (r["success"] as? Bool) != true {
+                await MainActor.run { self.logout(silent: true) }
+            }
+        }
+    }
+
+    func logout(silent: Bool = false) {
+        if !silent { Task { try? await Api.post("/api/auth/logout", [:]) } }
         PushMonitor.shared.stop()
         token = ""; userId = ""; role = ""; username = ""; displayName = ""
+        let d = UserDefaults.standard
+        d.removeObject(forKey: "session_token")
+        d.removeObject(forKey: "session_userId")
+        d.removeObject(forKey: "session_role")
+        d.removeObject(forKey: "session_username")
+        d.removeObject(forKey: "session_displayName")
         loggedIn = false
     }
 }
