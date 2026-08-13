@@ -48,25 +48,25 @@ enum UpdateChecker {
 
 struct MainView: View {
     // 登录后静默检查版本更新（仅发现新版本时弹窗）
+    @State private var tab = 0
     @State private var upd: UpdateInfo?
     @State private var updMsg = ""
     @State private var showUpd = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        TabView {
-            HomeView()
-                .tabItem { Label("首页", systemImage: "house.fill") }
-            DevicesView()
-                .tabItem { Label("设备", systemImage: "video.fill") }
-            PersonnelView()
-                .tabItem { Label("人员", systemImage: "person.2.fill") }
-            MessagesView()
-                .tabItem { Label("消息", systemImage: "bubble.left.and.bubble.right.fill") }
-            ProfileView()
-                .tabItem { Label("我的", systemImage: "person.crop.circle.fill") }
+        VStack(spacing: 0) {
+            // 隐藏系统标签栏，改用自定义液态玻璃导航条（iOS 26/27 真玻璃）
+            TabView(selection: $tab) {
+                HomeView().toolbar(.hidden, for: .tabBar).tag(0)
+                DevicesView().toolbar(.hidden, for: .tabBar).tag(1)
+                PersonnelView().toolbar(.hidden, for: .tabBar).tag(2)
+                MessagesView().toolbar(.hidden, for: .tabBar).tag(3)
+                ProfileView().toolbar(.hidden, for: .tabBar).tag(4)
+            }
+            .tint(Color(hex: 0x1890ff))
+            GlassTabBar(tab: $tab)
         }
-        .tint(Color(hex: 0x1890ff))
         .onAppear {
             Task {
                 if let u = try? await UpdateChecker.fetchUpdate(platform: "ios") {
@@ -82,6 +82,42 @@ struct MainView: View {
                 Button("知道了", role: .cancel) {}
             }
         } message: { Text(updMsg) }
+    }
+}
+
+// ============ 底部导航：Liquid Glass 悬浮条（iOS 26/27 运行时加载 UIGlassEffect 真玻璃，低版本回退动态色卡片） ============
+struct GlassTabBar: View {
+    @Binding var tab: Int
+    private let titles = ["首页", "设备", "人员", "消息", "我的"]
+    private let icons = ["house.fill", "video.fill", "person.2.fill", "bubble.left.and.bubble.right.fill", "person.crop.circle.fill"]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<5, id: \.self) { i in
+                Button {
+                    tab = i
+                } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: icons[i])
+                            .font(.system(size: 18, weight: tab == i ? .semibold : .regular))
+                        Text(titles[i]).font(.system(size: 10, weight: tab == i ? .semibold : .regular))
+                    }
+                    .foregroundColor(tab == i ? Color(hex: 0x1890ff) : T.textHint)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 7)
+                    .background(tab == i ? Color(hex: 0x1890ff).opacity(0.12) : Color.clear)
+                    .cornerRadius(12)
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 2)
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+        .glass(corner: 28)
+        .padding(.horizontal, 12)
+        .padding(.top, 6)
+        .padding(.bottom, 4)
     }
 }
 
