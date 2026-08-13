@@ -126,6 +126,7 @@ struct NewChatView: View {
 
                 if mode == "group" {
                     TextField("群名称", text: $groupName)
+                        .foregroundColor(T.textMain)
                         .padding(10).background(Color(hex: 0xf5f5f5)).cornerRadius(8)
                         .padding(.horizontal)
                 }
@@ -249,6 +250,7 @@ struct ChatRoomView: View {
                     Image(systemName: "photo.circle").font(.title2).foregroundColor(Color(hex: 0x1890ff))
                 }
                 TextField("输入消息…", text: $input)
+                    .foregroundColor(T.textMain)
                     .padding(8).background(Color(hex: 0xf0f0f0)).cornerRadius(8)
                 Button { send() } label: {
                     Text("发送").font(.subheadline.bold()).foregroundColor(.white)
@@ -317,15 +319,17 @@ struct ChatRoomView: View {
                     } else if t == "video" || t == "file" {
                         Text((t == "video" ? "🎬 " : "📎 ") + Api.str(m, "file_name"))
                             .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(mine ? Color(hex: 0x1890ff) : Color.white)
-                            .foregroundColor(mine ? .white : Color(hex: 0x262626))
-                            .cornerRadius(10)
+                            .background(bubbleBG(mine))
+                            .foregroundColor(mine ? .white : T.textMain)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.06), radius: 4, y: 2)
                     } else {
                         Text(Api.str(m, "content"))
                             .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(mine ? Color(hex: 0x1890ff) : Color.white)
-                            .foregroundColor(mine ? .white : Color(hex: 0x262626))
-                            .cornerRadius(10)
+                            .background(bubbleBG(mine))
+                            .foregroundColor(mine ? .white : T.textMain)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.06), radius: 4, y: 2)
                     }
                 }
                 if mine {
@@ -342,6 +346,13 @@ struct ChatRoomView: View {
         let fu = Api.str(m, "file_url")
         guard !fu.isEmpty else { return nil }
         return URL(string: Session.base + fu + "?token=" + session.token)
+    }
+
+    // 气泡背景：自己的消息用品牌蓝渐变，对方用白色卡片
+    private func bubbleBG(_ mine: Bool) -> some ShapeStyle {
+        mine
+        ? AnyShapeStyle(LinearGradient(colors: [Color(hex: 0x1890ff), Color(hex: 0x096dd9)], startPoint: .topLeading, endPoint: .bottomTrailing))
+        : AnyShapeStyle(Color.white)
     }
 
     func readText(_ m: [String: Any]) -> String {
