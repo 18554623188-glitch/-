@@ -67,14 +67,19 @@ final class Session: ObservableObject {
     func logout(silent: Bool = false) {
         if !silent { Task { try? await Api.post("/api/auth/logout", [:]) } }
         PushMonitor.shared.stop()
-        token = ""; userId = ""; role = ""; username = ""; displayName = ""
-        let d = UserDefaults.standard
-        d.removeObject(forKey: "session_token")
-        d.removeObject(forKey: "session_userId")
-        d.removeObject(forKey: "session_role")
-        d.removeObject(forKey: "session_username")
-        d.removeObject(forKey: "session_displayName")
-        loggedIn = false
+        // @Published 属性必须在主线程修改，否则 SwiftUI 运行时崩溃（本方法可能从异步 Task 调用）
+        let work = { [weak self] in
+            guard let self else { return }
+            self.token = ""; self.userId = ""; self.role = ""; self.username = ""; self.displayName = ""
+            let d = UserDefaults.standard
+            d.removeObject(forKey: "session_token")
+            d.removeObject(forKey: "session_userId")
+            d.removeObject(forKey: "session_role")
+            d.removeObject(forKey: "session_username")
+            d.removeObject(forKey: "session_displayName")
+            self.loggedIn = false
+        }
+        if Thread.isMainThread { work() } else { DispatchQueue.main.async(execute: work) }
     }
 }
 
