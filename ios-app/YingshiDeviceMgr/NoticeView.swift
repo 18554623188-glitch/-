@@ -21,10 +21,12 @@ struct NoticeView: View {
                         postForm
                     }
                     HStack {
-                        Text("通知列表").font(.headline)
+                        Text("通知列表").font(.headline).foregroundColor(T.textMain)
                         Spacer()
                         Button("全部已读") { readAll() }
-                            .font(.caption).foregroundColor(Color(hex: 0x1890ff))
+                            .font(.caption.bold()).foregroundColor(T.brand)
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(T.brand.opacity(0.12)).cornerRadius(10)
                     }
                     .padding(.horizontal, 2)
                     ForEach(notices.indices, id: \.self) { i in
@@ -45,12 +47,14 @@ struct NoticeView: View {
 
     private var postForm: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("📢 发布通知（仅管理员）").font(.headline)
+            Text("📢 发布通知（仅管理员）").font(.headline).foregroundColor(T.textMain)
             TextField("通知标题", text: $title)
-                .padding(10).background(Color(hex: 0xf5f5f5)).cornerRadius(8)
+                .foregroundColor(T.textMain)
+                .padding(10).background(T.inputBG).cornerRadius(8)
             TextEditor(text: $content)
+                .foregroundColor(T.textMain)
                 .frame(height: 90)
-                .padding(6).background(Color(hex: 0xf5f5f5)).cornerRadius(8)
+                .padding(6).background(T.inputBG).cornerRadius(8)
             HStack(spacing: 8) {
                 ForEach(types, id: \.self) { t in
                     Button { nType = t } label: {
