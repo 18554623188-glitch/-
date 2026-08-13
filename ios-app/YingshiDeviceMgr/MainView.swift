@@ -257,11 +257,14 @@ struct PersonnelView: View {
         let nm = displayName(p)
         let acc = accountOf(nm)
         let online = (acc?["is_online"] as? Bool) ?? false
+        let dept = Api.str(p, "department")
+        let pos = Api.str(p, "position")
+        let sub = [dept, pos].filter { !$0.isEmpty }.joined(separator: " · ")
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Circle().fill(online ? Color(hex: 0x52c41a) : Color(hex: 0xd9d9d9))
                     .frame(width: 10, height: 10)
-                Text(nm).font(.headline).foregroundColor(T.textMain)
+                Text(nm.isEmpty ? "-" : nm).font(.headline).foregroundColor(T.textMain)
                 Spacer()
                 Text(online ? "在线" : "离线")
                     .font(.caption.bold())
@@ -269,6 +272,9 @@ struct PersonnelView: View {
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background((online ? T.green : Color(hex: 0xd9d9d9)).opacity(0.14))
                     .cornerRadius(8)
+            }
+            if !sub.isEmpty {
+                Text(sub).font(.caption).foregroundColor(T.textHint)
             }
             if let acc {
                 let li = Api.str(acc, "last_login")
@@ -283,9 +289,13 @@ struct PersonnelView: View {
         .card()
     }
 
+    // 后端 personnel 表主字段为 name，兼容 display_name / 关联账户 username
     func displayName(_ p: [String: Any]) -> String {
-        let n = Api.str(p, "display_name")
-        return n.isEmpty ? Api.str(p, "username") : n
+        for k in ["name", "display_name", "account_username", "username"] {
+            let v = Api.str(p, k)
+            if !v.isEmpty { return v }
+        }
+        return ""
     }
 
     func accountOf(_ name: String) -> [String: Any]? {
