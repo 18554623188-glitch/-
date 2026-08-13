@@ -105,11 +105,11 @@ struct HomeView: View {
                     Text("系统消息推送已开启：报修、维修完成、聊天等新消息将通过通知栏实时提醒")
                         .font(.footnote).foregroundColor(Color(hex: 0x1890ff))
                         .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(hex: 0xe6f4ff)).cornerRadius(8)
+                        .background(T.bannerBG).cornerRadius(8)
                         .padding(16)
                 }
             }
-            .background(Color(hex: 0xf5f6f8))
+            .background(T.pageBG)
             .ignoresSafeArea(edges: .top)
             .onAppear { loadAll() }
             .onReceive(timer) { _ in loadAll() }
@@ -247,7 +247,7 @@ struct PersonnelView: View {
                 }
                 .padding(16)
             }
-            .background(Color(hex: 0xf5f6f8))
+            .background(T.pageBG)
             .navigationTitle("人员")
             .onAppear { load() }
         }
@@ -359,11 +359,11 @@ struct ProfileView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Text("影视星河设备管理系统 v4.0").font(.caption2).foregroundColor(Color(hex: 0xbfbfbf)).padding(.top, 10)
+                    Text("影视星河设备管理系统 v4.0").font(.caption2).foregroundColor(T.textFaint).padding(.top, 10)
                 }
                 .padding(16)
             }
-            .background(Color(hex: 0xf5f6f8))
+            .background(T.pageBG)
             .navigationTitle("我的")
             .sheet(isPresented: $showPost) { NoticeView(postMode: true) }
             .sheet(isPresented: $showPwd) { ChangePwdView() }
@@ -396,12 +396,12 @@ struct ProfileView: View {
     private func menuRow(_ icon: String, _ title: String) -> some View {
         HStack {
             Text(icon)
-            Text(title).foregroundColor(Color(hex: 0x262626))
+            Text(title).foregroundColor(T.textMain)
             Spacer()
-            Text("›").foregroundColor(Color(hex: 0xbfbfbf))
+            Text("›").foregroundColor(T.textFaint)
         }
         .padding(14)
-        .background(Color.white).cornerRadius(12)
+        .background(T.card).cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 4, y: 2)
     }
 }
