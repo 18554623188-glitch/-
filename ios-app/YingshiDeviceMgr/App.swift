@@ -232,14 +232,35 @@ struct StatusBadge: View {
     }
 }
 
-// 圆角卡片（深浅动态背景 + 柔和阴影）
+// Liquid Glass 统一入口：iOS 26+ 用原生 glassEffect，低版本回退动态色卡片
+extension View {
+    @ViewBuilder
+    func glass(corner: CGFloat = 14) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: .rect(cornerRadius: corner))
+        } else {
+            self.background(T.card)
+                .cornerRadius(corner)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
+        }
+    }
+}
+
+// 圆角卡片（iOS 26+ 液态玻璃 / 低版本深浅动态背景 + 柔和阴影）
 struct CardBG: ViewModifier {
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content
-            .padding(14)
-            .background(T.card)
-            .cornerRadius(14)
-            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
+        if #available(iOS 26.0, *) {
+            content
+                .padding(14)
+                .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        } else {
+            content
+                .padding(14)
+                .background(T.card)
+                .cornerRadius(14)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
+        }
     }
 }
 extension View {
