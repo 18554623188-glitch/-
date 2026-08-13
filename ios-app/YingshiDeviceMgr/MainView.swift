@@ -188,8 +188,11 @@ struct HomeView: View {
 
     private func statCard(_ title: String, _ value: String, _ color: Color) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(value).font(.system(size: 26, weight: .bold)).foregroundColor(color)
-            Text(title).font(.footnote).foregroundColor(Color(hex: 0x595959))
+            Text(value).font(.system(size: 28, weight: .heavy, design: .rounded)).foregroundColor(color)
+            HStack(spacing: 6) {
+                Capsule().fill(color).frame(width: 14, height: 3)
+                Text(title).font(.footnote).foregroundColor(T.textSub)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
@@ -258,17 +261,21 @@ struct PersonnelView: View {
             HStack {
                 Circle().fill(online ? Color(hex: 0x52c41a) : Color(hex: 0xd9d9d9))
                     .frame(width: 10, height: 10)
-                Text(nm).font(.headline)
+                Text(nm).font(.headline).foregroundColor(T.textMain)
                 Spacer()
                 Text(online ? "在线" : "离线")
-                    .font(.caption).foregroundColor(online ? Color(hex: 0x52c41a) : Color(hex: 0x8c8c8c))
+                    .font(.caption.bold())
+                    .foregroundColor(online ? T.green : T.textHint)
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background((online ? T.green : Color(hex: 0xd9d9d9)).opacity(0.14))
+                    .cornerRadius(8)
             }
             if let acc {
                 let li = Api.str(acc, "last_login")
                 let lo = Api.str(acc, "last_logout")
                 if !li.isEmpty || !lo.isEmpty {
                     Text("登录：\(li.isEmpty ? "-" : li) 下线：\(lo.isEmpty ? "-" : lo)")
-                        .font(.caption).foregroundColor(Color(hex: 0x8c8c8c))
+                        .font(.caption).foregroundColor(T.textHint)
                 }
             }
         }
