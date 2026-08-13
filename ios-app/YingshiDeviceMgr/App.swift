@@ -52,6 +52,7 @@ final class Session: ObservableObject {
         username = d.string(forKey: "session_username") ?? ""
         displayName = d.string(forKey: "session_displayName") ?? ""
         loggedIn = true
+        // 启动推送轮询（start 内部会异步到主线程执行，避免启动早期同步调用导致崩溃/闪退）
         PushMonitor.shared.start()
         // 后台校验 token 有效性：已失效（如服务器重启）才退回登录页，网络不可用时保持登录态
         Task { [weak self] in
@@ -86,15 +87,24 @@ final class PushMonitor {
     private var firstSync = UserDefaults.standard.integer(forKey: "push_cursor") == 0
 
     func start() {
-        stopTimer()
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
-        timer = Timer.scheduledTimer(withTimeInterval: 8, repeats: true) { [weak self] _ in
-            self?.poll()
+        // 统一异步到主线程启动，避免在启动早期/非主线程创建 Timer 或请求通知权限导致崩溃
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.stopTimer()
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+            self.timer = Timer.scheduledTimer(withTimeInterval: 8, repeats: true) { [weak self] _ in
+                self?.poll()
+            }
+            self.poll()
         }
-        poll()
     }
 
-    func stop() { stopTimer() }
+    func stop() {
+        // Timer 必须在主线程 invalidate，跨线程调用会崩溃
+        DispatchQueue.main.async { [weak self] in
+            self?.stopTimer()
+        }
+    }
 
     private func stopTimer() {
         timer?.invalidate()
