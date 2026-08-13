@@ -232,12 +232,34 @@ struct StatusBadge: View {
     }
 }
 
-// Liquid Glass 统一入口：iOS 26+ 用原生 glassEffect，低版本回退动态色卡片
+// Liquid Glass 背景：运行时动态加载 iOS 26 UIGlassEffect（低版本 SDK 也可编译），非 iOS 26 回退系统薄雾
+struct GlassBackground: UIViewRepresentable {
+    var corner: CGFloat
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        let v = UIVisualEffectView()
+        if let cls = NSClassFromString("UIGlassEffect") as? UIVisualEffect.Type {
+            v.effect = cls.init()
+        } else {
+            v.effect = UIBlurEffect(style: .systemUltraThinMaterial)
+        }
+        v.layer.cornerRadius = corner
+        v.layer.cornerCurve = .continuous
+        v.clipsToBounds = true
+        return v
+    }
+    func updateUIView(_ v: UIVisualEffectView, context: Context) {
+        v.layer.cornerRadius = corner
+        v.layer.cornerCurve = .continuous
+        v.clipsToBounds = true
+    }
+}
+
+// Liquid Glass 统一入口：iOS 26+ 真液态玻璃，低版本回退动态色卡片
 extension View {
     @ViewBuilder
     func glass(corner: CGFloat = 14) -> some View {
         if #available(iOS 26.0, *) {
-            self.glassEffect(.regular, in: .rect(cornerRadius: corner))
+            self.background(GlassBackground(corner: corner))
         } else {
             self.background(T.card)
                 .cornerRadius(corner)
@@ -253,7 +275,7 @@ struct CardBG: ViewModifier {
         if #available(iOS 26.0, *) {
             content
                 .padding(14)
-                .glassEffect(.regular, in: .rect(cornerRadius: 14))
+                .background(GlassBackground(corner: 14))
         } else {
             content
                 .padding(14)
