@@ -13,6 +13,7 @@
 		FD0000000000000000000023 /* DevicesViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD0000000000000000000013 /* DevicesViews.swift */; };
 		FD0000000000000000000024 /* ChatViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD0000000000000000000014 /* ChatViews.swift */; };
 		FD0000000000000000000025 /* NoticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD0000000000000000000015 /* NoticeView.swift */; };
+		FD000000000000000000002A /* BorrowViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD000000000000000000001B /* BorrowViews.swift */; };
 		FD0000000000000000000026 /* logo1.png in Resources */ = {isa = PBXBuildFile; fileRef = FD0000000000000000000017 /* logo1.png */; };
 		FD0000000000000000000027 /* logo2sq.png in Resources */ = {isa = PBXBuildFile; fileRef = FD0000000000000000000018 /* logo2sq.png */; };
 		FD0000000000000000000028 /* logo3.png in Resources */ = {isa = PBXBuildFile; fileRef = FD0000000000000000000019 /* logo3.png */; };
@@ -26,6 +27,7 @@
 		FD0000000000000000000013 /* DevicesViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicesViews.swift; sourceTree = "<group>"; };
 		FD0000000000000000000014 /* ChatViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViews.swift; sourceTree = "<group>"; };
 		FD0000000000000000000015 /* NoticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoticeView.swift; sourceTree = "<group>"; };
+		FD000000000000000000001B /* BorrowViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BorrowViews.swift; sourceTree = "<group>"; };
 		FD0000000000000000000016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FD0000000000000000000017 /* logo1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo1.png; sourceTree = "<group>"; };
 		FD0000000000000000000018 /* logo2sq.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo2sq.png; sourceTree = "<group>"; };
@@ -68,6 +70,7 @@
 				FD0000000000000000000011 /* LoginView.swift */,
 				FD0000000000000000000012 /* MainView.swift */,
 				FD0000000000000000000013 /* DevicesViews.swift */,
+				FD000000000000000000001B /* BorrowViews.swift */,
 				FD0000000000000000000014 /* ChatViews.swift */,
 				FD0000000000000000000015 /* NoticeView.swift */,
 				FD0000000000000000000016 /* Info.plist */,
@@ -155,6 +158,7 @@
 				FD0000000000000000000021 /* LoginView.swift in Sources */,
 				FD0000000000000000000022 /* MainView.swift in Sources */,
 				FD0000000000000000000023 /* DevicesViews.swift in Sources */,
+								FD000000000000000000002A /* BorrowViews.swift in Sources */,
 				FD0000000000000000000024 /* ChatViews.swift in Sources */,
 				FD0000000000000000000025 /* NoticeView.swift in Sources */,
 			);
@@ -237,7 +241,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.0.0;
+				MARKETING_VERSION = 5.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.yingshi.devicemgr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -260,7 +264,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.0.0;
+				MARKETING_VERSION = 5.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.yingshi.devicemgr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
