@@ -56,7 +56,7 @@ struct LoginView: View {
                     .disabled(busy)
                 }
                 .padding(22)
-                .background(T.card).cornerRadius(18)
+                .glass(corner: 18)
                 .shadow(color: .black.opacity(0.18), radius: 14, y: 6)
                 .padding(.horizontal, 28)
                 if !msg.isEmpty {
