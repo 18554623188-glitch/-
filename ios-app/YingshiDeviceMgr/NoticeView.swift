@@ -35,7 +35,7 @@ struct NoticeView: View {
                 }
                 .padding(16)
             }
-            .background(Color(hex: 0xf5f6f8))
+            .background(T.pageBG)
             .navigationTitle(postMode ? "发布通知" : "通知中心")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -59,9 +59,9 @@ struct NoticeView: View {
                 ForEach(types, id: \.self) { t in
                     Button { nType = t } label: {
                         Text(t).font(.caption.bold())
-                            .foregroundColor(nType == t ? .white : Color(hex: 0x595959))
+                            .foregroundColor(nType == t ? .white : T.textSub)
                             .padding(.horizontal, 12).padding(.vertical, 6)
-                            .background(nType == t ? Color(hex: 0x1890ff) : Color(hex: 0xf0f0f0))
+                            .background(nType == t ? Color(hex: 0x1890ff) : T.chipBG)
                             .cornerRadius(14)
                     }
                 }
@@ -71,9 +71,9 @@ struct NoticeView: View {
                 ForEach(priorities, id: \.self) { p in
                     Button { priority = p } label: {
                         Text(p).font(.caption.bold())
-                            .foregroundColor(priority == p ? .white : Color(hex: 0x595959))
+                            .foregroundColor(priority == p ? .white : T.textSub)
                             .padding(.horizontal, 12).padding(.vertical, 6)
-                            .background(priority == p ? Color(hex: 0xfa8c16) : Color(hex: 0xf0f0f0))
+                            .background(priority == p ? Color(hex: 0xfa8c16) : T.chipBG)
                             .cornerRadius(14)
                     }
                 }
@@ -96,19 +96,19 @@ struct NoticeView: View {
                 Circle().fill(unread ? Color(hex: 0xff4d4f) : Color(hex: 0xd9d9d9))
                     .frame(width: 8, height: 8)
                 Text(Api.str(n, "title")).font(.subheadline.bold())
-                    .foregroundColor(Color(hex: 0x262626))
+                    .foregroundColor(T.textMain)
                 Spacer()
                 Text(Api.str(n, "priority") == "高" ? "高" : "")
                     .font(.caption2.bold()).foregroundColor(Color(hex: 0xff4d4f))
             }
-            Text(Api.str(n, "content")).font(.caption).foregroundColor(Color(hex: 0x595959))
+            Text(Api.str(n, "content")).font(.caption).foregroundColor(T.textSub)
             HStack {
                 Text(Api.str(n, "type")).font(.system(size: 10))
                     .foregroundColor(Color(hex: 0x1890ff))
                     .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(Color(hex: 0xe6f4ff)).cornerRadius(4)
+                    .background(T.bannerBG).cornerRadius(4)
                 Spacer()
-                Text(Api.str(n, "created_at")).font(.system(size: 10)).foregroundColor(Color(hex: 0xbfbfbf))
+                Text(Api.str(n, "created_at")).font(.system(size: 10)).foregroundColor(T.textFaint)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
