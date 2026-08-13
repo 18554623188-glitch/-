@@ -45,6 +45,21 @@ struct DevicesView: View {
                         .background(LinearGradient(colors: [Color(hex: 0x722ed1), Color(hex: 0x9254de)], startPoint: .leading, endPoint: .trailing))
                         .cornerRadius(22)
                     }
+                    // 设备借用/归还入口（橙色按钮，与安卓/鸿蒙端一致）
+                    NavigationLink {
+                        BorrowListView()
+                    } label: {
+                        HStack {
+                            Text("🔄").font(.headline)
+                            Text("设备借用 / 归还").fontWeight(.bold)
+                            Text("可上传照片，自动记录时间").font(.caption2).opacity(0.85)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(12)
+                        .background(LinearGradient(colors: [Color(hex: 0xfa8c16), Color(hex: 0xffa940)], startPoint: .leading, endPoint: .trailing))
+                        .cornerRadius(22)
+                    }
                     // 状态筛选 chips
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
