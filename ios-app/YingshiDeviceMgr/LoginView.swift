@@ -22,7 +22,7 @@ struct LoginView: View {
                 Text("影视星河设备管理系统")
                     .font(.title2.bold()).foregroundColor(.white)
                     .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
-                Text("v4.0 · 苹果原生版")
+                Text("v5.0 · 苹果原生版")
                     .font(.footnote).foregroundColor(.white.opacity(0.9))
                 VStack(spacing: 14) {
                     ZStack(alignment: .leading) {
@@ -84,6 +84,7 @@ struct LoginView: View {
                         session.username = Api.str(d, "username")
                         session.displayName = Api.str(d, "display_name")
                         session.role = Api.str(d, "role")
+                        session.persist()
                         session.loggedIn = true
                         PushMonitor.shared.start()
                     } else {
