@@ -23,11 +23,11 @@ struct MessagesView: View {
                     } label: {
                         convRow(convs[i])
                     }
-                    .listRowBackground(Color.white)
+                    .listRowBackground(T.card)
                 }
             }
             .listStyle(.plain)
-            .background(Color(hex: 0xf5f6f8))
+            .background(T.pageBG)
             .navigationTitle("消息")
             .navigationDestination(for: ConvRef.self) { ref in
                 ChatRoomView(convId: ref.id, title: ref.title)
@@ -59,13 +59,13 @@ struct MessagesView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(convTitle(c)).font(.headline).foregroundColor(Color(hex: 0x262626))
+                    Text(convTitle(c)).font(.headline).foregroundColor(T.textMain)
                     if Api.str(c, "type") == "group" {
                         Text("群").font(.caption2).foregroundColor(Color(hex: 0x722ed1))
                     }
                     Spacer()
                     if let lm = c["last_message"] as? [String: Any] {
-                        Text(Api.str(lm, "created_at").suffix(11)).font(.caption2).foregroundColor(Color(hex: 0xbfbfbf))
+                        Text(Api.str(lm, "created_at").suffix(11)).font(.caption2).foregroundColor(T.textFaint)
                     }
                 }
                 HStack {
@@ -73,7 +73,7 @@ struct MessagesView: View {
                         Text(Api.str(lm, "sender_name") + "：" + preview(lm))
                             .font(.caption).foregroundColor(Color(hex: 0x8c8c8c)).lineLimit(1)
                     } else {
-                        Text("暂无消息").font(.caption).foregroundColor(Color(hex: 0xbfbfbf))
+                        Text("暂无消息").font(.caption).foregroundColor(T.textFaint)
                     }
                     Spacer()
                     let unread = Api.int(c, "unread")
@@ -127,7 +127,7 @@ struct NewChatView: View {
                 if mode == "group" {
                     TextField("群名称", text: $groupName)
                         .foregroundColor(T.textMain)
-                        .padding(10).background(Color(hex: 0xf5f5f5)).cornerRadius(8)
+                        .padding(10).background(T.inputBG).cornerRadius(8)
                         .padding(.horizontal)
                 }
                 List(users.indices, id: \.self) { i in
@@ -138,7 +138,7 @@ struct NewChatView: View {
                         Button {
                             openDirect(uid: uid, name: nm)
                         } label: {
-                            HStack { Text(nm).foregroundColor(Color(hex: 0x262626)); Spacer() }
+                            HStack { Text(nm).foregroundColor(T.textMain); Spacer() }
                         }
                     } else {
                         Button {
@@ -147,7 +147,7 @@ struct NewChatView: View {
                             HStack {
                                 Image(systemName: selected.contains(uid) ? "checkmark.circle.fill" : "circle")
                                     .foregroundColor(selected.contains(uid) ? Color(hex: 0x1890ff) : Color(hex: 0xd9d9d9))
-                                Text(nm).foregroundColor(Color(hex: 0x262626))
+                                Text(nm).foregroundColor(T.textMain)
                             }
                         }
                     }
@@ -243,7 +243,7 @@ struct ChatRoomView: View {
                 }
                 .padding(.horizontal, 10)
             }
-            .background(Color(hex: 0xfafafa))
+            .background(T.chatBG)
             // 输入行
             HStack(spacing: 8) {
                 PhotosPicker(selection: $pickerItem, matching: .images) {
@@ -251,7 +251,7 @@ struct ChatRoomView: View {
                 }
                 TextField("输入消息…", text: $input)
                     .foregroundColor(T.textMain)
-                    .padding(8).background(Color(hex: 0xf0f0f0)).cornerRadius(8)
+                    .padding(8).background(T.inputBG).cornerRadius(8)
                 Button { send() } label: {
                     Text("发送").font(.subheadline.bold()).foregroundColor(.white)
                         .padding(.horizontal, 14).padding(.vertical, 8)
@@ -259,9 +259,9 @@ struct ChatRoomView: View {
                 }
             }
             .padding(10)
-            .background(Color.white)
+            .background(T.card)
         }
-        .background(Color(hex: 0xf5f6f8))
+        .background(T.pageBG)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -352,7 +352,7 @@ struct ChatRoomView: View {
     private func bubbleBG(_ mine: Bool) -> some ShapeStyle {
         mine
         ? AnyShapeStyle(LinearGradient(colors: [Color(hex: 0x1890ff), Color(hex: 0x096dd9)], startPoint: .topLeading, endPoint: .bottomTrailing))
-        : AnyShapeStyle(Color.white)
+        : AnyShapeStyle(T.card)
     }
 
     func readText(_ m: [String: Any]) -> String {
