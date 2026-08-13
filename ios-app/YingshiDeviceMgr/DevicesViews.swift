@@ -18,11 +18,13 @@ struct DevicesView: View {
                     // 搜索行
                     HStack(spacing: 10) {
                         HStack {
-                            Image(systemName: "magnifyingglass").foregroundColor(Color(hex: 0xbfbfbf))
+                            Image(systemName: "magnifyingglass").foregroundColor(T.textFaint)
                             TextField("搜索名称 / 编号 / 位置", text: $keyword)
+                                .foregroundColor(T.textMain)
                                 .onSubmit { load() }
                         }
                         .padding(10).background(Color.white).cornerRadius(20)
+                        .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
                         Button("搜索") { load() }
                             .font(.subheadline.bold()).foregroundColor(.white)
                             .padding(.horizontal, 16).padding(.vertical, 10)
@@ -137,10 +139,11 @@ struct DeviceDetailView: View {
         ScrollView {
             VStack(spacing: 12) {
                 HStack {
-                    Text(Api.str(device, "name")).font(.title3.bold())
+                    Text(Api.str(device, "name")).font(.title3.bold()).foregroundColor(T.textMain)
                     Spacer()
                     StatusBadge(status: Api.str(device, "status"))
                 }
+                .card()
                 row("类型", Api.str(device, "type"))
                 row("编号", Api.str(device, "serial_number"))
                 row("型号", Api.str(device, "model"))
