@@ -13,6 +13,9 @@ struct MessagesView: View {
     @State private var convs: [[String: Any]] = []
     @State private var path = NavigationPath()
     @State private var showNew = false
+    @State private var confirmDelete: [String: Any]?
+    @State private var errMsg = ""
+    @State private var showErr = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -24,6 +27,17 @@ struct MessagesView: View {
                         convRow(convs[i])
                     }
                     .listRowBackground(T.card)
+                    // 删除会话：左滑或长按；群聊仅群主可解散（后端校验）
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) { confirmDelete = convs[i] } label: {
+                            Label("删除", systemImage: "trash")
+                        }
+                    }
+                    .contextMenu {
+                        Button(role: .destructive) { confirmDelete = convs[i] } label: {
+                            Label("删除会话", systemImage: "trash")
+                        }
+                    }
                 }
             }
             .listStyle(.plain)
@@ -42,6 +56,15 @@ struct MessagesView: View {
                     path.append(ref)
                 }
             }
+            .alert("删除会话", isPresented: Binding(get: { confirmDelete != nil }, set: { if !$0 { confirmDelete = nil } })) {
+                Button("取消", role: .cancel) { }
+                Button("删除", role: .destructive) { if let c = confirmDelete { deleteConv(c) } }
+            } message: {
+                Text(Api.str(confirmDelete ?? [:], "type") == "group"
+                     ? "解散群聊将删除全部群消息并移出所有成员，不可恢复。"
+                     : "删除会话将同时删除聊天记录，不可恢复。")
+            }
+            .alert(errMsg, isPresented: $showErr) { Button("好") { } }
         }
     }
 
@@ -101,6 +124,22 @@ struct MessagesView: View {
         Task {
             let r = try? await Api.get("/api/chat/conversations")
             await MainActor.run { if let r { convs = Api.arr(r) } }
+        }
+    }
+
+    func deleteConv(_ c: [String: Any]) {
+        let id = Api.str(c, "id")
+        Task {
+            let r = try? await Api.delete("/api/chat/conversations/" + id)
+            await MainActor.run {
+                if let r, r["success"] as? Bool == true {
+                    convs.removeAll { Api.str($0, "id") == id }
+                } else {
+                    errMsg = r?["message"] as? String ?? "删除失败，请稍后重试"
+                    showErr = true
+                }
+                confirmDelete = nil
+            }
         }
     }
 }
@@ -259,7 +298,8 @@ struct ChatRoomView: View {
                 }
             }
             .padding(10)
-            .background(T.card)
+            .glass(corner: 16)
+            .padding(.horizontal, 6)
         }
         .background(T.pageBG)
         .navigationTitle(title)
@@ -270,7 +310,7 @@ struct ChatRoomView: View {
             }
         }
         .sheet(isPresented: $showManage) {
-            ManageView(convId: convId, convInfo: convInfo) {
+            ManageView(convId: convId) {
                 dismiss()
             }
         }
@@ -420,25 +460,29 @@ struct ChatRoomView: View {
     }
 }
 
-// ============ 群管理：移除成员 + 解散群聊 ============
+// ============ 群管理：成员列表 + 移除成员 + 解散群聊（均仅群主，后端校验） ============
 struct ManageView: View {
     @Environment(\.dismiss) private var dismiss
     let convId: String
-    let convInfo: [String: Any]?
     var onDisband: () -> Void = {}
-    @State private var msg = ""
+    @State private var members: [[String: Any]] = []
+    @State private var creatorId = ""
+    @State private var confirmRemove: [String: Any]?
+    @State private var confirmDisband = false
+    @State private var errMsg = ""
+    @State private var showErr = false
 
     var body: some View {
         NavigationStack {
             List {
-                Section("成员") {
-                    ForEach(memberIndices(), id: \.self) { i in
+                Section("成员（\(members.count) 人）") {
+                    ForEach(members.indices, id: \.self) { i in
                         memberRow(members[i])
                     }
                 }
                 Section {
                     Button {
-                        disband()
+                        confirmDisband = true
                     } label: {
                         Text("解散群聊").foregroundColor(Color(hex: 0xff4d4f)).frame(maxWidth: .infinity)
                     }
@@ -447,27 +491,56 @@ struct ManageView: View {
             .navigationTitle("群管理")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { Button("关闭") { dismiss() } }
+            .onAppear { load() }
+            .alert("移除成员", isPresented: Binding(get: { confirmRemove != nil }, set: { if !$0 { confirmRemove = nil } })) {
+                Button("取消", role: .cancel) { }
+                Button("移除", role: .destructive) { if let m = confirmRemove { remove(Api.str(m, "id")) } }
+            } message: {
+                Text("将把「" + nameOf(confirmRemove ?? [:]) + "」移出群聊。")
+            }
+            .alert("解散群聊", isPresented: $confirmDisband) {
+                Button("取消", role: .cancel) { }
+                Button("解散", role: .destructive) { disband() }
+            } message: {
+                Text("解散后群消息将被删除，所有成员移出，不可恢复。")
+            }
+            .alert(errMsg, isPresented: $showErr) { Button("好") { } }
         }
     }
 
-    private var members: [[String: Any]] {
-        (convInfo?["members"] as? [[String: Any]]) ?? []
+    private func nameOf(_ m: [String: Any]) -> String {
+        let n = Api.str(m, "display_name")
+        return n.isEmpty ? Api.str(m, "username") : n
     }
-
-    private func memberIndices() -> [Int] { Array(members.indices) }
 
     private func memberRow(_ m: [String: Any]) -> some View {
         let uid = Api.str(m, "id")
-        let nm = Api.str(m, "display_name").isEmpty ? Api.str(m, "username") : Api.str(m, "display_name")
         return HStack {
-            Text(nm)
-            if uid == Api.str(convInfo ?? [:], "creator_id") {
+            Text(nameOf(m))
+            if uid == creatorId {
                 Text("群主").font(.caption2).foregroundColor(Color(hex: 0x722ed1))
             }
+            if uid == Session.shared.userId {
+                Text("我").font(.caption2).foregroundColor(Color(hex: 0x8c8c8c))
+            }
             Spacer()
-            if uid != Session.shared.userId {
-                Button("移除") { remove(uid) }
+            if uid != creatorId {
+                Button("移除") { confirmRemove = m }
                     .font(.caption).foregroundColor(Color(hex: 0xff4d4f))
+            }
+        }
+    }
+
+    func load() {
+        Task {
+            let r = try? await Api.get("/api/chat/conversations")
+            await MainActor.run {
+                if let r {
+                    for c in Api.arr(r) where Api.str(c, "id") == convId {
+                        members = (c["members"] as? [[String: Any]]) ?? []
+                        creatorId = Api.str(c, "creator_id")
+                    }
+                }
             }
         }
     }
@@ -476,18 +549,27 @@ struct ManageView: View {
         Task {
             let r = try? await Api.delete("/api/chat/conversations/\(convId)/members/\(uid)")
             await MainActor.run {
-                if let r { msg = r["success"] as? Bool == true ? "已移除" : (Api.str(r, "message")) }
-                dismiss()
+                if let r, r["success"] as? Bool == true {
+                    load()
+                } else {
+                    errMsg = r?["message"] as? String ?? "移除失败"
+                    showErr = true
+                }
             }
         }
     }
 
     func disband() {
         Task {
-            _ = try? await Api.delete("/api/chat/conversations/\(convId)")
+            let r = try? await Api.delete("/api/chat/conversations/\(convId)")
             await MainActor.run {
-                dismiss()
-                onDisband()
+                if let r, r["success"] as? Bool == true {
+                    dismiss()
+                    onDisband()
+                } else {
+                    errMsg = r?["message"] as? String ?? "解散失败"
+                    showErr = true
+                }
             }
         }
     }
