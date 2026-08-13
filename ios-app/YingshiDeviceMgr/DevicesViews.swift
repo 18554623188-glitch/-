@@ -23,7 +23,7 @@ struct DevicesView: View {
                                 .foregroundColor(T.textMain)
                                 .onSubmit { load() }
                         }
-                        .padding(10).background(Color.white).cornerRadius(20)
+                        .padding(10).background(T.card).cornerRadius(20)
                         .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
                         Button("搜索") { load() }
                             .font(.subheadline.bold()).foregroundColor(.white)
@@ -55,9 +55,9 @@ struct DevicesView: View {
                                 } label: {
                                     Text(f)
                                         .font(.caption.bold())
-                                        .foregroundColor((statusFilter == "" && f == "全部") || statusFilter == f ? .white : Color(hex: 0x595959))
+                                        .foregroundColor((statusFilter == "" && f == "全部") || statusFilter == f ? .white : T.textSub)
                                         .padding(.horizontal, 14).padding(.vertical, 7)
-                                        .background(((statusFilter == "" && f == "全部") || statusFilter == f) ? Color(hex: 0x1890ff) : Color.white)
+                                        .background(((statusFilter == "" && f == "全部") || statusFilter == f) ? Color(hex: 0x1890ff) : T.card)
                                         .cornerRadius(16)
                                 }
                             }
@@ -74,7 +74,7 @@ struct DevicesView: View {
                 }
                 .padding(16)
             }
-            .background(Color(hex: 0xf5f6f8))
+            .background(T.pageBG)
             .navigationTitle("设备")
             .toolbar {
                 Button { showAdd = true } label: { Image(systemName: "plus.circle.fill").font(.title3) }
@@ -96,7 +96,7 @@ struct DevicesView: View {
     private func deviceRow(_ d: [String: Any]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(Api.str(d, "name")).font(.headline).foregroundColor(Color(hex: 0x262626))
+                Text(Api.str(d, "name")).font(.headline).foregroundColor(T.textMain)
                 Spacer()
                 StatusBadge(status: Api.str(d, "status"))
             }
@@ -155,7 +155,7 @@ struct DeviceDetailView: View {
             }
             .padding(16)
         }
-        .background(Color(hex: 0xf5f6f8))
+        .background(T.pageBG)
         .navigationTitle("设备详情")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -164,7 +164,7 @@ struct DeviceDetailView: View {
         HStack(alignment: .top) {
             Text(label).font(.subheadline).foregroundColor(Color(hex: 0x8c8c8c))
                 .frame(width: 76, alignment: .leading)
-            Text(value.isEmpty ? "-" : value).font(.subheadline).foregroundColor(Color(hex: 0x262626))
+            Text(value.isEmpty ? "-" : value).font(.subheadline).foregroundColor(T.textMain)
             Spacer()
         }
         .card()
@@ -200,9 +200,9 @@ struct AddDeviceView: View {
                                 } label: {
                                     Text(t)
                                         .font(.caption.bold())
-                                        .foregroundColor(type == t ? .white : Color(hex: 0x595959))
+                                        .foregroundColor(type == t ? .white : T.textSub)
                                         .padding(.horizontal, 12).padding(.vertical, 6)
-                                        .background(type == t ? Color(hex: 0x1890ff) : Color(hex: 0xf0f0f0))
+                                        .background(type == t ? Color(hex: 0x1890ff) : T.chipBG)
                                         .cornerRadius(14)
                                 }
                             }
