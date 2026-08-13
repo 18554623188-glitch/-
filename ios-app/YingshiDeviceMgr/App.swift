@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import UserNotifications
 
 // 影视星河设备管理系统 v4.0 · 苹果原生版（SwiftUI）
@@ -9,16 +10,12 @@ struct YingshiApp: App {
     @StateObject private var session = Session.shared
     var body: some Scene {
         WindowGroup {
-            Group {
-                if session.loggedIn {
-                    MainView()
-                } else {
-                    LoginView()
-                }
+            if session.loggedIn {
+                MainView()
+            } else {
+                LoginView()
             }
-            // 全局强制浅色模式：界面背景为固定白/浅灰卡片，若跟随系统深色模式会导致
-            // 默认文字变白而与白色背景融合看不见，故锁定浅色外观
-            .preferredColorScheme(.light)
+            // 跟随系统深浅色：界面颜色全部通过 T 动态色适配，深色模式下自动切换深色背景/浅色文字
         }
     }
 }
@@ -180,18 +177,35 @@ extension Color {
     }
 }
 
-// 全局主题色（四端统一视觉规范）：文字一律显式取这里，确保深浅背景下均可读
+// 全局主题色（四端统一视觉规范）：深浅色动态适配，跟随系统外观自动切换
+extension UIColor {
+    convenience init(hex: UInt) {
+        self.init(red: CGFloat((hex >> 16) & 0xff) / 255,
+                  green: CGFloat((hex >> 8) & 0xff) / 255,
+                  blue: CGFloat(hex & 0xff) / 255,
+                  alpha: 1)
+    }
+}
+
 enum T {
+    // 深浅动态色：light 值 / dark 值
+    static func dyn(_ l: UInt, _ d: UInt) -> Color {
+        Color(UIColor { t in t.userInterfaceStyle == .dark ? UIColor(hex: d) : UIColor(hex: l) })
+    }
     static let brand = Color(hex: 0x1890ff)          // 品牌蓝
     static let brandDeep = Color(hex: 0x1a2980)      // 渐变深蓝
     static let brandTeal = Color(hex: 0x26d0ce)      // 渐变青
     static let purple = Color(hex: 0x722ed1)         // 扫码/群聊紫
-    static let textMain = Color(hex: 0x262626)       // 主文字
-    static let textSub = Color(hex: 0x595959)        // 次级文字
-    static let textHint = Color(hex: 0x8c8c8c)       // 辅助文字
-    static let textFaint = Color(hex: 0xbfbfbf)      // 弱化文字
-    static let pageBG = Color(hex: 0xf5f6f8)         // 页面底色
-    static let inputBG = Color(hex: 0xf5f5f5)        // 输入框底色
+    static let textMain = dyn(0x262626, 0xe6e6e6)    // 主文字
+    static let textSub = dyn(0x595959, 0xa6a6a6)     // 次级文字
+    static let textHint = dyn(0x8c8c8c, 0x8c8c8c)    // 辅助文字
+    static let textFaint = dyn(0xbfbfbf, 0x595959)   // 弱化文字
+    static let pageBG = dyn(0xf5f6f8, 0x141414)      // 页面底色
+    static let inputBG = dyn(0xf5f5f5, 0x262626)     // 输入框底色
+    static let card = dyn(0xffffff, 0x1f1f1f)        // 卡片背景
+    static let chipBG = dyn(0xf0f0f0, 0x2a2a2a)      // 未选中 chip
+    static let bannerBG = dyn(0xe6f4ff, 0x11203a)    // 提示条背景
+    static let chatBG = dyn(0xfafafa, 0x181818)      // 聊天区背景
     static let green = Color(hex: 0x52c41a)
     static let orange = Color(hex: 0xfa8c16)
     static let red = Color(hex: 0xff4d4f)
@@ -217,12 +231,12 @@ struct StatusBadge: View {
     }
 }
 
-// 白色圆角卡片（统一圆角 + 柔和阴影）
+// 圆角卡片（深浅动态背景 + 柔和阴影）
 struct CardBG: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(14)
-            .background(Color.white)
+            .background(T.card)
             .cornerRadius(14)
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
     }
