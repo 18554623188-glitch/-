@@ -117,6 +117,7 @@ enum Api {
     static func get(_ p: String) async throws -> [String: Any] { try await request("GET", p) }
     static func post(_ p: String, _ b: [String: Any]) async throws -> [String: Any] { try await request("POST", p, b) }
     static func patch(_ p: String, _ b: [String: Any]) async throws -> [String: Any] { try await request("PATCH", p, b) }
+        static func put(_ p: String, _ b: [String: Any]) async throws -> [String: Any] { try await request("PUT", p, b) }
     static func delete(_ p: String) async throws -> [String: Any] { try await request("DELETE", p) }
 
     // 下载附件原始字节（Authorization 头鉴权，用于图片预览/保存）
