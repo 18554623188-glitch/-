@@ -9,11 +9,16 @@ struct YingshiApp: App {
     @StateObject private var session = Session.shared
     var body: some Scene {
         WindowGroup {
-            if session.loggedIn {
-                MainView()
-            } else {
-                LoginView()
+            Group {
+                if session.loggedIn {
+                    MainView()
+                } else {
+                    LoginView()
+                }
             }
+            // 全局强制浅色模式：界面背景为固定白/浅灰卡片，若跟随系统深色模式会导致
+            // 默认文字变白而与白色背景融合看不见，故锁定浅色外观
+            .preferredColorScheme(.light)
         }
     }
 }
@@ -175,6 +180,23 @@ extension Color {
     }
 }
 
+// 全局主题色（四端统一视觉规范）：文字一律显式取这里，确保深浅背景下均可读
+enum T {
+    static let brand = Color(hex: 0x1890ff)          // 品牌蓝
+    static let brandDeep = Color(hex: 0x1a2980)      // 渐变深蓝
+    static let brandTeal = Color(hex: 0x26d0ce)      // 渐变青
+    static let purple = Color(hex: 0x722ed1)         // 扫码/群聊紫
+    static let textMain = Color(hex: 0x262626)       // 主文字
+    static let textSub = Color(hex: 0x595959)        // 次级文字
+    static let textHint = Color(hex: 0x8c8c8c)       // 辅助文字
+    static let textFaint = Color(hex: 0xbfbfbf)      // 弱化文字
+    static let pageBG = Color(hex: 0xf5f6f8)         // 页面底色
+    static let inputBG = Color(hex: 0xf5f5f5)        // 输入框底色
+    static let green = Color(hex: 0x52c41a)
+    static let orange = Color(hex: 0xfa8c16)
+    static let red = Color(hex: 0xff4d4f)
+}
+
 // 状态徽章（正常/维修中/闲置/已报废）
 struct StatusBadge: View {
     let status: String
@@ -195,14 +217,14 @@ struct StatusBadge: View {
     }
 }
 
-// 白色圆角卡片
+// 白色圆角卡片（统一圆角 + 柔和阴影）
 struct CardBG: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(14)
             .background(Color.white)
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 2)
+            .cornerRadius(14)
+            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
     }
 }
 extension View {
