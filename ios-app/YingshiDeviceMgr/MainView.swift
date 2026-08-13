@@ -1,6 +1,6 @@
 import SwiftUI
 
-let APP_VER = "4.0.0"
+let APP_VER = "5.0.0"
 
 // 版本更新信息（四端统一数据结构，platform 区分 ios/android/harmony/windows）
 struct UpdateInfo: Identifiable {
@@ -103,8 +103,9 @@ struct GlassTabBar: View {
                         Text(titles[i]).font(.system(size: 10, weight: tab == i ? .semibold : .regular))
                     }
                     .foregroundColor(tab == i ? Color(hex: 0x1890ff) : T.textHint)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
+                    // 足够大的触控热区（≥4pt 标准 48pt），整个区域均可点击
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .contentShape(Rectangle())
                     .background(tab == i ? Color(hex: 0x1890ff).opacity(0.12) : Color.clear)
                     .cornerRadius(12)
                 }
@@ -113,11 +114,11 @@ struct GlassTabBar: View {
             }
         }
         .padding(.horizontal, 6)
-        .padding(.vertical, 4)
+        .padding(.vertical, 5)
         .glass(corner: 28)
         .padding(.horizontal, 12)
         .padding(.top, 6)
-        .padding(.bottom, 4)
+        .padding(.bottom, 8)
     }
 }
 
@@ -168,7 +169,7 @@ struct HomeView: View {
                 Text("你好，\(session.displayName.isEmpty ? session.username : session.displayName)")
                     .font(.title2.bold()).foregroundColor(.white)
                 HStack(spacing: 8) {
-                    Text("影视星河设备管理系统 v4.0 · 苹果原生版")
+                    Text("影视星河设备管理系统 v5.0 · 苹果原生版")
                         .font(.caption).foregroundColor(.white.opacity(0.85))
                 }
             }
@@ -405,7 +406,7 @@ struct ProfileView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Text("影视星河设备管理系统 v4.0").font(.caption2).foregroundColor(T.textFaint).padding(.top, 10)
+                    Text("影视星河设备管理系统 v5.0").font(.caption2).foregroundColor(T.textFaint).padding(.top, 10)
                 }
                 .padding(16)
             }
