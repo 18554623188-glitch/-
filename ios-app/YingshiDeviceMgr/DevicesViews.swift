@@ -9,7 +9,7 @@ struct DevicesView: View {
     @State private var statusFilter = ""
     @State private var showScan = false
     @State private var showAdd = false
-    private let filters = ["全部", "正常", "维修中", "闲置", "已报废"]
+    private let filters = ["全部", "正常", "维修中", "闲置", "已报废", "借用中"]
 
     var body: some View {
         NavigationStack {
@@ -304,7 +304,7 @@ struct EditDeviceSheet: View {
     @State private var desc: String
     @State private var msg = ""
     @State private var busy = false
-    private let statuses = ["正常", "维修中", "闲置", "已报废"]
+    private let statuses = ["正常", "维修中", "闲置", "已报废", "借用中"]
 
     init(device: [String: Any], onDone: @escaping ([String: Any]?, String) -> Void) {
         _deviceId = State(initialValue: Api.str(device, "id"))
