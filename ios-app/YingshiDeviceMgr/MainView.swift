@@ -1,6 +1,6 @@
 import SwiftUI
 
-let APP_VER = "5.0.0"
+let APP_VER = "5.1.0"
 
 // 版本更新信息（四端统一数据结构，platform 区分 ios/android/harmony/windows）
 struct UpdateInfo: Identifiable {
@@ -169,7 +169,7 @@ struct HomeView: View {
                 Text("你好，\(session.displayName.isEmpty ? session.username : session.displayName)")
                     .font(.title2.bold()).foregroundColor(.white)
                 HStack(spacing: 8) {
-                    Text("影视星河设备管理系统 v5.0 · 苹果原生版")
+                    Text("影视星河设备管理系统 v5.1 · 苹果原生版")
                         .font(.caption).foregroundColor(.white.opacity(0.85))
                 }
             }
@@ -406,7 +406,7 @@ struct ProfileView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Text("影视星河设备管理系统 v5.0").font(.caption2).foregroundColor(T.textFaint).padding(.top, 10)
+                    Text("影视星河设备管理系统 v5.1").font(.caption2).foregroundColor(T.textFaint).padding(.top, 10)
                 }
                 .padding(16)
             }
