@@ -267,7 +267,7 @@ enum T {
     static let red = Color(hex: 0xff4d4f)
 }
 
-// 状态徽章（正常/维修中/闲置/已报废）
+// 状态徽章（正常/维修中/闲置/已报废/借用中）
 struct StatusBadge: View {
     let status: String
     private var color: Color {
@@ -275,6 +275,7 @@ struct StatusBadge: View {
         case "正常": return Color(hex: 0x52c41a)
         case "维修中": return Color(hex: 0xfa8c16)
         case "已报废": return Color(hex: 0xff4d4f)
+        case "借用中": return Color(hex: 0x1890ff)
         default: return Color(hex: 0x8c8c8c)
         }
     }
