@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import AVFoundation
 
 // ============ 设备借用/归还 ============
 // 从已有设备中选择设备、从已有成员中选择借用人、可上传借用/归还照片，
@@ -159,6 +160,8 @@ struct LoanFormView: View {
     @State private var deviceId = ""
     @State private var personName = ""
     @State private var remark = ""
+    @State private var deviceKw = ""
+    @State private var showScan = false
     @State private var photoItem: PhotosPickerItem?
     @State private var photoData: Data?
     @State private var photoId = ""
@@ -167,13 +170,29 @@ struct LoanFormView: View {
     @State private var errMsg = ""
     @State private var showErr = false
 
-    // 可借用设备（排除已报废）；归还时保证记录中的设备在选项中
+    // 可借用设备（排除已报废；借用表单另排除借用中，已借用设备不能二次借用）；归还时保证记录中的设备在选项中
     private var deviceOptions: [[String: Any]] {
-        var list = devices.filter { Api.str($0, "status") != "已报废" }
+        var list = devices.filter { Api.str($0, "status") != "已报废" && (isReturn || Api.str($0, "status") != "借用中") }
         if isReturn, let l = loan, !list.contains(where: { Api.str($0, "id") == Api.str(l, "device_id") }) {
             list.insert(["id": Api.str(l, "device_id"), "name": Api.str(l, "device_name"), "type": "", "status": "借用中"], at: 0)
         }
         return list
+    }
+
+    // 按设备编码/名称搜索过滤（搜设备编码进行查找设备借用）
+    private var filteredDeviceOptions: [[String: Any]] {
+        let k = deviceKw.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !k.isEmpty else { return deviceOptions }
+        let list = deviceOptions.filter { d in
+            (Api.str(d, "serial_number") + " " + Api.str(d, "name")).lowercased().contains(k)
+        }
+        return list.isEmpty ? deviceOptions : list
+    }
+
+    // 搜索变化后保证选中项在过滤结果中
+    private func syncDeviceSelection() {
+        let ids = filteredDeviceOptions.map { Api.str($0, "id") }
+        if !ids.contains(deviceId) { deviceId = ids.first ?? "" }
     }
 
     // 可选人员；归还时保证记录中的借用人在选项中
@@ -249,10 +268,23 @@ struct LoanFormView: View {
         NavigationStack {
             Form {
                 Section(isReturn ? "归还设备（可重新选择）" : "借用设备") {
+                    HStack {
+                        TextField("输入或扫设备编码 / 名称查找", text: $deviceKw)
+                            .onChange(of: deviceKw) { _ in syncDeviceSelection() }
+                        Button {
+                            AVCaptureDevice.requestAccess(for: .video) { _ in
+                                DispatchQueue.main.async { showScan = true }
+                            }
+                        } label: {
+                            Text("📷 扫码").font(.subheadline.bold()).foregroundColor(.white)
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .background(T.purple).cornerRadius(8)
+                        }
+                    }
                     Picker(isReturn ? "归还设备" : "借用设备", selection: $deviceId) {
-                        ForEach(deviceOptions.indices, id: \.self) { i in
-                            let d = deviceOptions[i]
-                            Text("\(Api.str(d, "name"))（\(Api.str(d, "type")) / \(Api.str(d, "status"))）")
+                        ForEach(filteredDeviceOptions.indices, id: \.self) { i in
+                            let d = filteredDeviceOptions[i]
+                            Text("\(Api.str(d, "name"))（编号 \(Api.str(d, "serial_number")) / \(Api.str(d, "status"))）")
                                 .tag(Api.str(d, "id"))
                         }
                     }
@@ -308,6 +340,15 @@ struct LoanFormView: View {
                 }
             }
             .onAppear { load() }
+            .fullScreenCover(isPresented: $showScan) {
+                ScannerView { code in
+                    showScan = false
+                    if !code.isEmpty {
+                        deviceKw = code
+                        syncDeviceSelection()
+                    }
+                }
+            }
             .onChange(of: photoItem) { item in
                 guard let item else { return }
                 uploading = true
