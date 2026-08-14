@@ -467,6 +467,7 @@ struct ManageView: View {
     var onDisband: () -> Void = {}
     @State private var members: [[String: Any]] = []
     @State private var creatorId = ""
+    @State private var outsiders: [[String: Any]] = []
     @State private var confirmRemove: [String: Any]?
     @State private var confirmDisband = false
     @State private var errMsg = ""
@@ -480,6 +481,21 @@ struct ManageView: View {
                         memberRow(members[i])
                     }
                 }
+                // 拉人入群：列出尚未入群的用户，点击邀请立即加入
+                Section("邀请成员（拉人入群）") {
+                    if outsiders.isEmpty {
+                        Text("所有成员均已在群聊中").foregroundColor(T.textHint)
+                    } else {
+                        ForEach(outsiders.indices, id: \.self) { i in
+                            HStack {
+                                Text(nameOf(outsiders[i]))
+                                Spacer()
+                                Button("邀请") { invite(Api.str(outsiders[i], "id")) }
+                                    .font(.caption).foregroundColor(Color(hex: 0x1890ff))
+                            }
+                        }
+                    }
+                }
                 Section {
                     Button {
                         confirmDisband = true
@@ -491,7 +507,7 @@ struct ManageView: View {
             .navigationTitle("群管理")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { Button("关闭") { dismiss() } }
-            .onAppear { load() }
+            .onAppear { load(); loadOutsiders() }
             .alert("移除成员", isPresented: Binding(get: { confirmRemove != nil }, set: { if !$0 { confirmRemove = nil } })) {
                 Button("取消", role: .cancel) { }
                 Button("移除", role: .destructive) { if let m = confirmRemove { remove(Api.str(m, "id")) } }
@@ -540,6 +556,41 @@ struct ManageView: View {
                         members = (c["members"] as? [[String: Any]]) ?? []
                         creatorId = Api.str(c, "creator_id")
                     }
+                }
+            }
+        }
+    }
+
+    // 拉人候选：尚未入群的用户（独立拉取，避免与 load() 竟态）
+    func loadOutsiders() {
+        Task {
+            let ru = try? await Api.get("/api/chat/users")
+            let rc = try? await Api.get("/api/chat/conversations")
+            await MainActor.run {
+                var mem: [[String: Any]] = []
+                if let rc {
+                    for c in Api.arr(rc) where Api.str(c, "id") == convId {
+                        mem = (c["members"] as? [[String: Any]]) ?? []
+                    }
+                }
+                if let ru {
+                    outsiders = Api.arr(ru).filter { u in !mem.contains { m in Api.str(m, "id") == Api.str(u, "id") } }
+                }
+            }
+        }
+    }
+
+    // 拉人：邀请指定用户加入群聊
+    func invite(_ uid: String) {
+        Task {
+            let r = try? await Api.post("/api/chat/conversations/\(convId)/members", ["user_ids": [uid]])
+            await MainActor.run {
+                if let r, r["success"] as? Bool == true {
+                    load()
+                    loadOutsiders()
+                } else {
+                    errMsg = r?["message"] as? String ?? "邀请失败"
+                    showErr = true
                 }
             }
         }
