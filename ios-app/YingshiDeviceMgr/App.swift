@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import UserNotifications
 
-// 影视星河设备管理系统 v5.1 · 苹果原生版（SwiftUI）
+// 影视星河设备管理系统 v5.2 · 苹果原生版（SwiftUI）
 // 与鸿蒙端同功能同界面：登录/首页(天气+统计)/设备(扫码)/人员(登录下线时间)/消息(已读回执+群管理)/通知(管理员发布)/我的
 
 @main
