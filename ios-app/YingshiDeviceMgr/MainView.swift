@@ -1,6 +1,6 @@
 import SwiftUI
 
-let APP_VER = "5.1.0"
+let APP_VER = "5.2.0"
 
 // 版本更新信息（四端统一数据结构，platform 区分 ios/android/harmony/windows）
 struct UpdateInfo: Identifiable {
@@ -169,7 +169,7 @@ struct HomeView: View {
                 Text("你好，\(session.displayName.isEmpty ? session.username : session.displayName)")
                     .font(.title2.bold()).foregroundColor(.white)
                 HStack(spacing: 8) {
-                    Text("影视星河设备管理系统 v5.1 · 苹果原生版")
+                    Text("影视星河设备管理系统 v5.2 · 苹果原生版")
                         .font(.caption).foregroundColor(.white.opacity(0.85))
                 }
             }
@@ -362,6 +362,7 @@ struct ProfileView: View {
     @StateObject private var session = Session.shared
     @State private var showPost = false
     @State private var showPwd = false
+    @State private var showPhone = false
     @State private var upd: UpdateInfo?
     @State private var updMsg = ""
     @State private var showUpd = false
@@ -399,6 +400,8 @@ struct ProfileView: View {
                     }
                     Button { showPwd = true } label: { menuRow("🔒", "修改密码") }
                         .buttonStyle(.plain)
+                    Button { showPhone = true } label: { menuRow("📱", "绑定手机号") }
+                        .buttonStyle(.plain)
                     Button { checkUpdate() } label: { menuRow("🔍", "检查更新") }
                         .buttonStyle(.plain)
                     Button { session.logout() } label: {
@@ -406,7 +409,7 @@ struct ProfileView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Text("影视星河设备管理系统 v5.1").font(.caption2).foregroundColor(T.textFaint).padding(.top, 10)
+                    Text("影视星河设备管理系统 v5.2").font(.caption2).foregroundColor(T.textFaint).padding(.top, 10)
                 }
                 .padding(16)
             }
@@ -414,6 +417,7 @@ struct ProfileView: View {
             .navigationTitle("我的")
             .sheet(isPresented: $showPost) { NoticeView(postMode: true) }
             .sheet(isPresented: $showPwd) { ChangePwdView() }
+            .sheet(isPresented: $showPhone) { BindPhoneView() }
             .alert(upd.map { "发现新版本 v" + $0.version } ?? "检查更新", isPresented: $showUpd) {
                 if let u = upd, u.url.hasPrefix("http"), let dl = URL(string: u.url) {
                     Button("下载新版本") { openURL(dl) }
@@ -450,6 +454,56 @@ struct ProfileView: View {
         .padding(14)
         .background(T.card).cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 4, y: 2)
+    }
+}
+
+struct BindPhoneView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var phone = ""
+    @State private var current = ""
+    @State private var msg = ""
+
+    static func validPhone(_ s: String) -> Bool {
+        guard s.count == 11, s.first == "1", "3456789".contains(s.dropFirst().first ?? " ") else { return false }
+        return s.dropFirst(2).allSatisfy { $0.isNumber }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Text("当前绑定：" + (current.isEmpty ? "未绑定" : current))
+                        .font(.footnote).foregroundColor(.secondary)
+                    TextField("11 位手机号", text: $phone)
+                        .keyboardType(.numberPad)
+                    Button("确认绑定") {
+                        if !BindPhoneView.validPhone(phone) { msg = "请输入正确的 11 位手机号"; return }
+                        Task {
+                            let r = try? await Api.patch("/api/auth/phone", ["phone": phone])
+                            await MainActor.run {
+                                if let r, r["success"] as? Bool == true { dismiss() }
+                                else { msg = r?["message"] as? String ?? "绑定失败" }
+                            }
+                        }
+                    }
+                    if !msg.isEmpty { Text(msg).foregroundColor(.red) }
+                } header: {
+                    Text("手机号用于忘记密码时自助找回")
+                }
+            }
+            .navigationTitle("绑定手机号")
+            .toolbar { Button("关闭") { dismiss() } }
+            .onAppear {
+                Task {
+                    let r = try? await Api.get("/api/auth/me")
+                    await MainActor.run {
+                        if let r, r["success"] as? Bool == true, let d = r["data"] as? [String: Any] {
+                            current = Api.str(d, "phone")
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
