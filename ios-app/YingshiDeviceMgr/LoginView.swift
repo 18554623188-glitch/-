@@ -92,12 +92,12 @@ struct LoginView: View {
                         Button(mode == 0 ? "注册账号" : "返回登录") {
                             mode = mode == 0 ? 1 : 0; msg = ""
                         }
-                        .font(.footnote).foregroundColor(.black)
+                        .font(.footnote).foregroundColor(Color(hex: 0x1890ff))
                         Spacer()
                         Button(mode == 2 ? "返回登录" : "忘记密码？") {
                             mode = mode == 2 ? 0 : 2; msg = ""
                         }
-                        .font(.footnote).foregroundColor(.black)
+                        .font(.footnote).foregroundColor(Color(hex: 0x1890ff))
                     }
                     .padding(.horizontal, 4)
                 }
