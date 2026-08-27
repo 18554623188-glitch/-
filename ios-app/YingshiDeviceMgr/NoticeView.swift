@@ -23,10 +23,13 @@ struct NoticeView: View {
                     HStack {
                         Text("通知列表").font(.headline).foregroundColor(T.textMain)
                         Spacer()
-                        Button("全部已读") { readAll() }
-                            .font(.caption.bold()).foregroundColor(T.brand)
-                            .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(T.brand.opacity(0.12)).cornerRadius(10)
+                        // 访客仅可查看通知内容，不提供标记已读操作
+                        if Session.shared.role != "guest" {
+                            Button("全部已读") { readAll() }
+                                .font(.caption.bold()).foregroundColor(T.brand)
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .background(T.brand.opacity(0.12)).cornerRadius(10)
+                        }
                     }
                     .padding(.horizontal, 2)
                     ForEach(notices.indices, id: \.self) { i in
@@ -113,7 +116,10 @@ struct NoticeView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
-        .onTapGesture { markRead(n) }
+        .onTapGesture {
+            // 访客仅可查看通知内容，不触发标记已读
+            if Session.shared.role != "guest" { markRead(n) }
+        }
     }
 
     func post() {
