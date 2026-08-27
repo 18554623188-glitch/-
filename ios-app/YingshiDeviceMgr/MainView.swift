@@ -1,6 +1,6 @@
 import SwiftUI
 
-let APP_VER = "5.2.0"
+let APP_VER = "5.3.0"
 
 // 版本更新信息（四端统一数据结构，platform 区分 ios/android/harmony/windows）
 struct UpdateInfo: Identifiable {
@@ -48,11 +48,15 @@ enum UpdateChecker {
 
 struct MainView: View {
     // 登录后静默检查版本更新（仅发现新版本时弹窗）
+    @StateObject private var session = Session.shared
     @State private var tab = 0
     @State private var upd: UpdateInfo?
     @State private var updMsg = ""
     @State private var showUpd = false
     @Environment(\.openURL) private var openURL
+
+    // 访客仅可查看内容：隐藏消息页签，「我的」页签索引前移
+    private var isGuest: Bool { session.role == "guest" }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -61,11 +65,13 @@ struct MainView: View {
                 HomeView().toolbar(.hidden, for: .tabBar).tag(0)
                 DevicesView().toolbar(.hidden, for: .tabBar).tag(1)
                 PersonnelView().toolbar(.hidden, for: .tabBar).tag(2)
-                MessagesView().toolbar(.hidden, for: .tabBar).tag(3)
-                ProfileView().toolbar(.hidden, for: .tabBar).tag(4)
+                if !isGuest {
+                    MessagesView().toolbar(.hidden, for: .tabBar).tag(3)
+                }
+                ProfileView().toolbar(.hidden, for: .tabBar).tag(isGuest ? 3 : 4)
             }
             .tint(Color(hex: 0x1890ff))
-            GlassTabBar(tab: $tab)
+            GlassTabBar(tab: $tab, guest: isGuest)
         }
         .onAppear {
             Task {
@@ -88,25 +94,32 @@ struct MainView: View {
 // ============ 底部导航：Liquid Glass 悬浮条（iOS 26/27 运行时加载 UIGlassEffect 真玻璃，低版本回退动态色卡片） ============
 struct GlassTabBar: View {
     @Binding var tab: Int
+    var guest: Bool = false
     private let titles = ["首页", "设备", "人员", "消息", "我的"]
     private let icons = ["house.fill", "video.fill", "person.2.fill", "bubble.left.and.bubble.right.fill", "person.crop.circle.fill"]
 
+    // 访客隐藏「消息」页签：索引 0/1/2 不变，「我的」由 4 变为 3
+    private var visibleTabs: [Int] {
+        guest ? [0, 1, 2, 4] : [0, 1, 2, 3, 4]
+    }
+
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(0..<5, id: \.self) { i in
+            ForEach(visibleTabs, id: \.self) { i in
+                let selected = (i == 4 && guest) ? tab == 3 : tab == i
                 Button {
-                    tab = i
+                    tab = (i == 4 && guest) ? 3 : i
                 } label: {
                     VStack(spacing: 3) {
                         Image(systemName: icons[i])
-                            .font(.system(size: 18, weight: tab == i ? .semibold : .regular))
-                        Text(titles[i]).font(.system(size: 10, weight: tab == i ? .semibold : .regular))
+                            .font(.system(size: 18, weight: selected ? .semibold : .regular))
+                        Text(titles[i]).font(.system(size: 10, weight: selected ? .semibold : .regular))
                     }
-                    .foregroundColor(tab == i ? Color(hex: 0x1890ff) : T.textHint)
+                    .foregroundColor(selected ? Color(hex: 0x1890ff) : T.textHint)
                     // 足够大的触控热区（≥4pt 标准 48pt），整个区域均可点击
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .contentShape(Rectangle())
-                    .background(tab == i ? Color(hex: 0x1890ff).opacity(0.12) : Color.clear)
+                    .background(selected ? Color(hex: 0x1890ff).opacity(0.12) : Color.clear)
                     .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
@@ -138,6 +151,21 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     header
+                    // 访客待审批提示条：仅可查看内容，审批通过后解锁全部功能
+                    if session.role == "guest" {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("⚠ 当前为访客账户，仅可查看内容")
+                                .font(.subheadline.bold()).foregroundColor(Color(hex: 0xd46b08))
+                            Text("您的账户正在等待管理员审批，审批通过后将自动升级为普通用户并解锁全部功能。")
+                                .font(.caption).foregroundColor(Color(hex: 0xd46b08))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(14)
+                        .background(Color(hex: 0xfff7e6))
+                        .cornerRadius(10)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 14)
+                    }
                     statsGrid.padding(.horizontal, 16).padding(.top, 16)
                     Text("系统消息推送已开启：报修、维修完成、聊天等新消息将通过通知栏实时提醒")
                         .font(.footnote).foregroundColor(Color(hex: 0x1890ff))
@@ -169,7 +197,7 @@ struct HomeView: View {
                 Text("你好，\(session.displayName.isEmpty ? session.username : session.displayName)")
                     .font(.title2.bold()).foregroundColor(.white)
                 HStack(spacing: 8) {
-                    Text("影视星河设备管理系统 v5.2 · 苹果原生版")
+                    Text("影视星河设备管理系统 v5.3 · 苹果原生版")
                         .font(.caption).foregroundColor(.white.opacity(0.85))
                 }
             }
@@ -380,10 +408,10 @@ struct ProfileView: View {
                                 .font(.title.bold()).foregroundColor(.white)
                         }
                         Text(session.displayName.isEmpty ? session.username : session.displayName).font(.headline)
-                        Text(session.role == "admin" ? "管理员" : "普通用户")
+                        Text(session.role == "admin" ? "管理员" : (session.role == "guest" ? "访客（待审批）" : "普通用户"))
                             .font(.caption).foregroundColor(.white)
                             .padding(.horizontal, 10).padding(.vertical, 3)
-                            .background(session.role == "admin" ? Color(hex: 0x722ed1) : Color(hex: 0x8c8c8c))
+                            .background(session.role == "admin" ? Color(hex: 0x722ed1) : (session.role == "guest" ? Color(hex: 0xfa8c16) : Color(hex: 0x8c8c8c)))
                             .cornerRadius(10)
                     }
                     .frame(maxWidth: .infinity)
@@ -398,10 +426,13 @@ struct ProfileView: View {
                         Button { showPost = true } label: { menuRow("📢", "发布通知（管理员）") }
                             .buttonStyle(.plain)
                     }
-                    Button { showPwd = true } label: { menuRow("🔒", "修改密码") }
-                        .buttonStyle(.plain)
-                    Button { showPhone = true } label: { menuRow("📱", "绑定手机号") }
-                        .buttonStyle(.plain)
+                    // 访客仅可查看内容，不提供账户自助操作入口
+                    if session.role != "guest" {
+                        Button { showPwd = true } label: { menuRow("🔒", "修改密码") }
+                            .buttonStyle(.plain)
+                        Button { showPhone = true } label: { menuRow("📱", "绑定手机号") }
+                            .buttonStyle(.plain)
+                    }
                     Button { checkUpdate() } label: { menuRow("🔍", "检查更新") }
                         .buttonStyle(.plain)
                     Button { session.logout() } label: {
@@ -409,7 +440,7 @@ struct ProfileView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Text("影视星河设备管理系统 v5.2").font(.caption2).foregroundColor(T.textFaint).padding(.top, 10)
+                    Text("影视星河设备管理系统 v5.3").font(.caption2).foregroundColor(T.textFaint).padding(.top, 10)
                 }
                 .padding(16)
             }
