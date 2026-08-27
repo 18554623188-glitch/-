@@ -27,9 +27,16 @@ struct LoginView: View {
                 Text("影视星河设备管理系统")
                     .font(.title2.bold()).foregroundColor(.white)
                     .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
-                Text("v5.2 · 苹果原生版")
+                Text("v5.3 · 苹果原生版")
                     .font(.footnote).foregroundColor(.white.opacity(0.9))
                 VStack(spacing: 14) {
+                    if mode == 1 {
+                        Text("注册的账号默认为访客，仅可查看内容；需管理员审批通过后才能升级为普通用户并使用全部功能。")
+                            .font(.caption).foregroundColor(Color(hex: 0xd46b08))
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(hex: 0xfff7e6)).cornerRadius(8)
+                    }
                     ZStack(alignment: .leading) {
                         if username.isEmpty {
                             Text("请输入用户名").foregroundColor(T.textHint).padding(.horizontal, 14)
@@ -136,7 +143,7 @@ struct LoginView: View {
                 await MainActor.run {
                     busy = false
                     if r["success"] as? Bool == true {
-                        msg = "注册成功，请登录"
+                        msg = "注册成功（访客账户，待管理员审批），请登录"
                         mode = 0; password = ""; confirmPwd = ""
                     } else {
                         msg = Api.str(r, "message").isEmpty ? "注册失败" : Api.str(r, "message")
