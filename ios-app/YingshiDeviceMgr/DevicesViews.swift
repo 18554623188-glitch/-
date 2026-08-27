@@ -4,6 +4,7 @@ import Vision
 
 // ============ 设备页：搜索 + 扫码查设备 + 状态筛选 + 列表 ============
 struct DevicesView: View {
+    @StateObject private var session = Session.shared
     @State private var devices: [[String: Any]] = []
     @State private var keyword = ""
     @State private var statusFilter = ""
@@ -45,20 +46,22 @@ struct DevicesView: View {
                         .background(LinearGradient(colors: [Color(hex: 0x722ed1), Color(hex: 0x9254de)], startPoint: .leading, endPoint: .trailing))
                         .cornerRadius(22)
                     }
-                    // 设备借用/归还入口（橙色按钮，与安卓/鸿蒙端一致）
-                    NavigationLink {
-                        BorrowListView()
-                    } label: {
-                        HStack {
-                            Text("🔄").font(.headline)
-                            Text("设备借用 / 归还").fontWeight(.bold)
-                            Text("可上传照片，自动记录时间").font(.caption2).opacity(0.85)
+                    // 设备借用/归还入口（橙色按钮，与安卓/鸿蒙端一致）；访客仅可查看，不提供借用入口
+                    if session.role != "guest" {
+                        NavigationLink {
+                            BorrowListView()
+                        } label: {
+                            HStack {
+                                Text("🔄").font(.headline)
+                                Text("设备借用 / 归还").fontWeight(.bold)
+                                Text("可上传照片，自动记录时间").font(.caption2).opacity(0.85)
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(12)
+                            .background(LinearGradient(colors: [Color(hex: 0xfa8c16), Color(hex: 0xffa940)], startPoint: .leading, endPoint: .trailing))
+                            .cornerRadius(22)
                         }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(12)
-                        .background(LinearGradient(colors: [Color(hex: 0xfa8c16), Color(hex: 0xffa940)], startPoint: .leading, endPoint: .trailing))
-                        .cornerRadius(22)
                     }
                     // 状态筛选 chips
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -92,7 +95,10 @@ struct DevicesView: View {
             .background(T.pageBG)
             .navigationTitle("设备")
             .toolbar {
-                Button { showAdd = true } label: { Image(systemName: "plus.circle.fill").font(.title3) }
+                // 访客仅可查看设备列表，不提供添加设备入口
+                if session.role != "guest" {
+                    Button { showAdd = true } label: { Image(systemName: "plus.circle.fill").font(.title3) }
+                }
             }
             .onAppear { load() }
             .fullScreenCover(isPresented: $showScan) {
@@ -161,6 +167,8 @@ struct DeviceDetailView: View {
     private var deviceId: String { Api.str(current, "id") }
     private var status: String { Api.str(current, "status") }
     private var isAdmin: Bool { session.role == "admin" }
+    // 访客仅可查看设备信息，不提供报修等操作
+    private var isGuest: Bool { session.role == "guest" }
 
     var body: some View {
         ScrollView {
@@ -179,22 +187,24 @@ struct DeviceDetailView: View {
                 row("购入日期", Api.str(current, "purchase_date"))
                 row("保修期至", Api.str(current, "warranty_date"))
                 row("描述", Api.str(current, "description"))
-                // 操作区：报修全员可用；编辑仅管理员可见
-                HStack(spacing: 12) {
-                    if status != "维修中" && status != "已报废" {
-                        Button { showRepair = true } label: {
-                            Label("报修", systemImage: "wrench.and.screwdriver.fill")
-                                .font(.subheadline.bold()).foregroundColor(.white)
-                                .frame(maxWidth: .infinity).padding(12)
-                                .background(Color(hex: 0xfa8c16)).cornerRadius(12)
+                // 操作区：报修全员可用（访客除外）；编辑仅管理员可见
+                if !isGuest || isAdmin {
+                    HStack(spacing: 12) {
+                        if !isGuest && status != "维修中" && status != "已报废" {
+                            Button { showRepair = true } label: {
+                                Label("报修", systemImage: "wrench.and.screwdriver.fill")
+                                    .font(.subheadline.bold()).foregroundColor(.white)
+                                    .frame(maxWidth: .infinity).padding(12)
+                                    .background(Color(hex: 0xfa8c16)).cornerRadius(12)
+                            }
                         }
-                    }
-                    if isAdmin {
-                        Button { showEdit = true } label: {
-                            Label("编辑信息", systemImage: "square.and.pencil")
-                                .font(.subheadline.bold()).foregroundColor(.white)
-                                .frame(maxWidth: .infinity).padding(12)
-                                .background(Color(hex: 0x1890ff)).cornerRadius(12)
+                        if isAdmin {
+                            Button { showEdit = true } label: {
+                                Label("编辑信息", systemImage: "square.and.pencil")
+                                    .font(.subheadline.bold()).foregroundColor(.white)
+                                    .frame(maxWidth: .infinity).padding(12)
+                                    .background(Color(hex: 0x1890ff)).cornerRadius(12)
+                            }
                         }
                     }
                 }
