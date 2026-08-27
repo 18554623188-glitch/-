@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import UserNotifications
 
-// 影视星河设备管理系统 v5.2 · 苹果原生版（SwiftUI）
+// 影视星河设备管理系统 v5.3 · 苹果原生版（SwiftUI）
 // 与鸿蒙端同功能同界面：登录/首页(天气+统计)/设备(扫码)/人员(登录下线时间)/消息(已读回执+群管理)/通知(管理员发布)/我的
 
 @main
@@ -26,7 +26,8 @@ final class Session: ObservableObject {
     @Published var loggedIn = false
     var token = ""
     var userId = ""
-    var role = ""
+    // 角色变化需驱动界面刷新（访客审批通过后自动解锁），故声明为 @Published（仅可在主线程修改）
+    @Published var role = ""
     var username = ""
     var displayName = ""
 
@@ -55,11 +56,20 @@ final class Session: ObservableObject {
         // 启动推送轮询（start 内部会异步到主线程执行，避免启动早期同步调用导致崩溃/闪退）
         PushMonitor.shared.start()
         // 后台校验 token 有效性：已失效（如服务器重启）才退回登录页，网络不可用时保持登录态
+        // 同时同步最新角色：访客被管理员审批通过后无需重新登录即可解锁全部功能
         Task { [weak self] in
             let r = try? await Api.get("/api/auth/me")
             guard let self else { return }
             if let r, (r["success"] as? Bool) != true {
                 await MainActor.run { self.logout(silent: true) }
+            } else if let r, let d = r["data"] as? [String: Any] {
+                let newRole = Api.str(d, "role")
+                await MainActor.run {
+                    if !newRole.isEmpty && newRole != self.role {
+                        self.role = newRole
+                        self.persist()
+                    }
+                }
             }
         }
     }
