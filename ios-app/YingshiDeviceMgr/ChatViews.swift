@@ -251,6 +251,8 @@ struct ChatRoomView: View {
     @State private var readMap: [String: [String: Any]] = [:]
     @State private var convInfo: [String: Any]?
     @State private var showManage = false
+    @State private var showReportPicker = false
+    @State private var showReportDirect = false
     @State private var pickerItem: PhotosPickerItem?
     @State private var previewPath = ""
     @State private var showPreview = false
@@ -305,14 +307,25 @@ struct ChatRoomView: View {
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if isOwner {
-                Button { showManage = true } label: { Text("⚙ 管理").font(.subheadline) }
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                Button { openReport() } label: { Text("🚩").font(.subheadline) }
+                    .accessibilityLabel("举报")
+                if isOwner {
+                    Button { showManage = true } label: { Text("⚙ 管理").font(.subheadline) }
+                }
             }
         }
         .sheet(isPresented: $showManage) {
             ManageView(convId: convId) {
                 dismiss()
             }
+        }
+        .sheet(isPresented: $showReportPicker) {
+            ChatReportPicker(convId: convId, convName: title, convInfo: convInfo)
+        }
+        .sheet(isPresented: $showReportDirect) {
+            ReportFormView(category: "chat", convId: convId, convName: title,
+                           reportedUserId: directTarget?.0 ?? "", reportedUserName: directTarget?.1 ?? "")
         }
         .onAppear { loadConvInfo(); loadMessages(); loadReadStatus() }
         .onReceive(msgTimer) { _ in loadMessages() }
@@ -334,6 +347,22 @@ struct ChatRoomView: View {
     private var isOwner: Bool {
         guard let c = convInfo else { return false }
         return Api.str(c, "type") == "group" && Api.str(c, "creator_id") == session.userId
+    }
+
+    // 举报分流：群聊先选对象（成员或整个群聊），单聊直接举报对方
+    private func openReport() {
+        if Api.str(convInfo ?? [:], "type") == "group" {
+            showReportPicker = true
+        } else {
+            showReportDirect = true
+        }
+    }
+
+    private var directTarget: (String, String)? {
+        let mem = (convInfo?["members"] as? [[String: Any]]) ?? []
+        guard let other = mem.first(where: { Api.str($0, "id") != session.userId }) else { return nil }
+        let name = Api.str(other, "display_name").isEmpty ? Api.str(other, "username") : Api.str(other, "display_name")
+        return (Api.str(other, "id"), name)
     }
 
     private func bubble(_ m: [String: Any]) -> some View {
