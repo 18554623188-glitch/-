@@ -422,6 +422,14 @@ struct ProfileView: View {
                     NavigationLink { NoticeView(postMode: false) } label: {
                         menuRow("🔔", "通知中心")
                     }
+                    // 举报渠道与隐私政策对所有账号公开无障碍，访客同样可投诉举报
+                    NavigationLink { ReportCenterView() } label: {
+                        menuRow("🚩", "投诉举报中心")
+                    }
+                    Button {
+                        if let u = URL(string: AppPolicy.privacyURL) { openURL(u) }
+                    } label: { menuRow("📄", "隐私政策") }
+                    .buttonStyle(.plain)
                     if session.role == "admin" {
                         Button { showPost = true } label: { menuRow("📢", "发布通知（管理员）") }
                             .buttonStyle(.plain)
