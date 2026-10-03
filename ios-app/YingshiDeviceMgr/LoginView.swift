@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct LoginView: View {
     @StateObject private var session = Session.shared
@@ -11,6 +12,10 @@ struct LoginView: View {
     @State private var displayName = ""
     @State private var confirmPwd = ""
     @State private var phone = ""
+    // 隐私政策：复选框默认不勾选，须由用户自愿、明确勾选后才能登录
+    @State private var agreed = false
+    @State private var showPrivacy = false
+    @State private var rejected = false
 
     var body: some View {
         ZStack {
@@ -83,6 +88,30 @@ struct LoginView: View {
                         }
                         .background(T.inputBG).cornerRadius(10)
                     }
+                    // 隐私政策勾选行：默认空白未勾选，须用户主动勾选
+                    HStack(spacing: 8) {
+                        Button {
+                            agreed.toggle()
+                        } label: {
+                            Image(systemName: agreed ? "checkmark.square.fill" : "square")
+                                .font(.title3)
+                                .foregroundColor(agreed ? Color(hex: 0x1890ff) : Color.white.opacity(0.75))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text(agreed ? "已同意隐私政策，取消勾选" : "同意隐私政策，未勾选"))
+                        .accessibilityAddTraits(agreed ? .isSelected : [])
+                        Text("我已阅读并同意")
+                            .font(.footnote).foregroundColor(.white.opacity(0.85))
+                        Button {
+                            if let u = URL(string: AppPolicy.privacyURL) { UIApplication.shared.open(u) }
+                        } label: {
+                            Text("《隐私政策》").font(.footnote.bold()).foregroundColor(Color(hex: 0x7ce7e5))
+                        }
+                        .buttonStyle(.plain)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 2)
+
                     Button(action: doAction) {
                         HStack {
                             if busy { ProgressView().tint(.white) }
@@ -120,10 +149,40 @@ struct LoginView: View {
                 Spacer()
             }
             .padding(.top, 60)
+
+            if rejected {
+                PrivacyRejectedView(onReconsider: {
+                    rejected = false
+                    showPrivacy = true
+                })
+            }
         }
+        .onAppear {
+            if UserDefaults.standard.string(forKey: "privacy_agreed_at") == nil && !rejected {
+                showPrivacy = true
+            }
+        }
+        .sheet(isPresented: $showPrivacy) {
+            PrivacyGateView(onAgree: {
+                agreed = true
+                showPrivacy = false
+                PrivacyStore.markAgreed()
+            }, onReject: {
+                showPrivacy = false
+                agreed = false
+                rejected = true
+            })
+        }
+        .interactiveDismissDisabled(showPrivacy)
     }
 
     func doAction() {
+        // 未勾选隐私政策：不得提交任何请求，重新弹出政策由用户自愿勾选
+        guard agreed else {
+            msg = "请先阅读并勾选同意《隐私政策》"
+            showPrivacy = true
+            return
+        }
         if mode == 0 { doLogin(); return }
         if mode == 1 { doRegister(); return }
         doForgot()
@@ -204,5 +263,108 @@ struct LoginView: View {
                 await MainActor.run { busy = false; msg = "网络错误：\(error.localizedDescription)" }
             }
         }
+    }
+}
+
+// 隐私政策同意记录：首次启动弹窗同意后写入时间戳，之后不再打扰
+enum PrivacyStore {
+    private static let key = "privacy_agreed_at"
+    static var agreed: Bool { UserDefaults.standard.string(forKey: key) != nil }
+    static func markAgreed() {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        UserDefaults.standard.set(f.string(from: Date()), forKey: key)
+    }
+}
+
+/// 隐私政策弹窗：必须提供真实的「不同意」拒绝选项
+struct PrivacyGateView: View {
+    var onAgree: () -> Void
+    var onReject: () -> Void
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("隐私政策与用户协议")
+                .font(.headline).foregroundColor(T.textMain)
+            ScrollView {
+                Text("""
+                欢迎使用影视星河设备管理系统。我们非常重视你的个人信息与隐私保护。
+
+                在你使用本应用前，请完整阅读并充分理解《隐私政策》。点击「同意并继续」即表示你已阅读并自愿同意政策全部内容；你也可以点击「不同意」拒绝，拒绝后本应用不会收集、上传任何个人信息，且无法继续使用。
+
+                我们仅在实现设备管理、消息通知等核心功能所必需的范围内处理信息，不会向无关第三方提供。你可随时通过「我的 → 投诉举报中心」提交投诉或行使你的权利。
+                """)
+                .font(.subheadline).foregroundColor(T.textSub)
+                .lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxHeight: 260)
+
+            Button {
+                if let u = URL(string: AppPolicy.privacyURL) { openURL(u) }
+            } label: {
+                Text("查看《隐私政策》全文").font(.subheadline.bold()).foregroundColor(T.brand)
+            }
+            .buttonStyle(.plain)
+
+            VStack(spacing: 10) {
+                Button(action: onAgree) {
+                    Text("同意并继续").fontWeight(.bold).foregroundColor(.white)
+                        .frame(maxWidth: .infinity).padding(13)
+                        .background(T.brand).cornerRadius(10)
+                }
+                Button(action: onReject) {
+                    Text("不同意").fontWeight(.semibold).foregroundColor(T.textSub)
+                        .frame(maxWidth: .infinity).padding(13)
+                        .background(T.chipBG).cornerRadius(10)
+                }
+                .accessibilityLabel("不同意隐私政策")
+            }
+        }
+        .padding(22)
+        .background(T.card)
+        .cornerRadius(18)
+        .shadow(color: .black.opacity(0.2), radius: 20, y: 8)
+        .padding(.horizontal, 28)
+    }
+}
+
+/// 拒绝隐私政策后的阻断页：不收集任何信息，可重新阅读或退出应用
+struct PrivacyRejectedView: View {
+    var onReconsider: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.92).ignoresSafeArea()
+            VStack(spacing: 18) {
+                Image(systemName: "hand.raised.fill")
+                    .font(.system(size: 44)).foregroundColor(Color(hex: 0xfa8c16))
+                Text("你已拒绝隐私政策").font(.title3.bold()).foregroundColor(.white)
+                Text("拒绝后本应用不会收集、上传任何个人信息，相关功能也无法使用。如需继续使用，请重新阅读并同意《隐私政策》。")
+                    .font(.subheadline).foregroundColor(.white.opacity(0.75))
+                    .multilineTextAlignment(.center)
+                VStack(spacing: 10) {
+                    Button(action: onReconsider) {
+                        Text("重新阅读并同意").fontWeight(.bold).foregroundColor(.white)
+                            .frame(maxWidth: .infinity).padding(13)
+                            .background(T.brand).cornerRadius(10)
+                    }
+                    Button {
+                        // 用户明确拒绝且选择退出：结束进程，不做任何数据收集
+                        exit(0)
+                    } label: {
+                        Text("退出应用").fontWeight(.semibold).foregroundColor(.white.opacity(0.8))
+                            .frame(maxWidth: .infinity).padding(13)
+                            .background(Color.white.opacity(0.14)).cornerRadius(10)
+                    }
+                }
+                .padding(.top, 6)
+            }
+            .padding(28)
+        }
+        // 阻断页需拦截全部点击，避免穿透到下层登录表单
+        .contentShape(Rectangle())
+        .onTapGesture {}
     }
 }
