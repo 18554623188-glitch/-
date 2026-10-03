@@ -8,13 +8,38 @@ import UserNotifications
 @main
 struct YingshiApp: App {
     @StateObject private var session = Session.shared
+    // 隐私政策门禁置于根节点：已持久化登录态的老用户同样必须先同意，避免绕过弹窗直接加载数据
+    @State private var gateAgreed = PrivacyStore.agreed
+    @State private var gateRejected = false
+
     var body: some Scene {
         WindowGroup {
-            if session.loggedIn {
-                MainView()
-            } else {
-                LoginView()
+            ZStack {
+                if gateAgreed {
+                    if session.loggedIn {
+                        MainView()
+                    } else {
+                        LoginView()
+                    }
+                } else {
+                    // 门禁未通过时不渲染任何业务界面
+                    Color.black.opacity(0.92).ignoresSafeArea()
+                }
+
+                if gateRejected {
+                    PrivacyRejectedView(onReconsider: { gateRejected = false })
+                }
             }
+            .sheet(isPresented: Binding(get: { !gateAgreed && !gateRejected }, set: { _ in })) {
+                PrivacyGateView(onAgree: {
+                    PrivacyStore.markAgreed()
+                    gateAgreed = true
+                }, onReject: {
+                    gateRejected = true
+                })
+                .presentationDetents([.large])
+            }
+            .interactiveDismissDisabled(!gateAgreed)
             // 跟随系统深浅色：界面颜色全部通过 T 动态色适配，深色模式下自动切换深色背景/浅色文字
         }
     }
