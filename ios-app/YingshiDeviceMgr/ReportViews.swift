@@ -130,9 +130,10 @@ struct ReportFormView: View {
             body["reported_user_id"] = reportedUserId
             body["reported_user_name"] = reportedUserName
         }
+        let requestBody = body
         Task {
             do {
-                let r = try await Api.post("/api/chat/report", body)
+                let r = try await Api.post("/api/chat/report", requestBody)
                 await MainActor.run {
                     busy = false
                     if r["success"] as? Bool == true {
@@ -356,7 +357,11 @@ struct ReportCenterView: View {
                 mine = []
                 serverLimited = true
             }
-            stats = (s?["success"] as? Bool == true) ? Api.dict(s) : nil
+            if let s, s["success"] as? Bool == true {
+                stats = Api.dict(s)
+            } else {
+                stats = nil
+            }
         }
     }
 }
